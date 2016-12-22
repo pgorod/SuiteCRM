@@ -51,7 +51,10 @@ if (!defined('sugarEntry') || !sugarEntry) {
  * 0777 by default.
  *
  * @param $pathname - String value of the directory to create
- * @param $mode - The integer value of the permissions mode to set the created directory to
+ * @param $mode - The integer value of the permissions mode to set the created directory to; 
+ *     if not specified, the dir_mode from config.php is used; if that is empty, a default of 0777 will apply.
+ *     Use a leading zero to specify the more familiar octal modes, like 0755.
+ *
  * @param bool $recursive - boolean value indicating whether or not to create recursive directories if needed
  * @param string $context
  *
@@ -61,8 +64,9 @@ if (!defined('sugarEntry') || !sugarEntry) {
  */
 function sugar_mkdir($pathname, $mode = null, $recursive = false, $context = '')
 {
-    $mode = get_mode('dir_mode', $mode);
-
+    if (!isset($mode)) {
+         $mode = get_mode('dir_mode', $mode);
+    }    
     if (sugar_is_dir($pathname, $mode)) {
         return true;
     }
@@ -287,7 +291,7 @@ function sugar_touch($filename, $time = null, $atime = null)
 /**
  * sugar_chmod
  * Attempts to change the permission of the specified filename to the mode value specified in the
- * default_permissions configuration; otherwise, it will use the mode value.
+ * parameter; if not set, the default_permissions configuration from config.php will apply.
  *
  * @param  string    filename - Path to the file
  * @param int $mode The integer value of the permissions mode to set the created directory to
@@ -316,7 +320,7 @@ function sugar_chmod($filename, $mode = null)
 /**
  * sugar_chown
  * Attempts to change the owner of the file filename to the user specified in the
- * default_permissions configuration; otherwise, it will use the user value.
+ * $user parameter; if not set, the default_permissions configuration from config.php will apply.
  *
  * @param $filename - Path to the file
  * @param string $user - A user name or number
@@ -345,7 +349,7 @@ function sugar_chown($filename, $user = '')
 /**
  * sugar_chgrp
  * Attempts to change the group of the file filename to the group specified in the
- * default_permissions configuration; otherwise it will use the group value.
+ * $group parameter; if not set, then the default_permissions configuration from config.php will apply.
  *
  * @param filename - Path to the file
  * @param string $group - A group name or number
@@ -374,8 +378,7 @@ function sugar_chgrp($filename, $group = '')
 /**
  * get_mode.
  *
- * Will check to see if there is a default mode defined in the config file, otherwise return the
- * $mode given as input
+ * Returns the default_permissions mode defined in the config file
  *
  * @param string $key
  * @param int $mode - the mode being passed by the calling function. This value will be overridden by a value

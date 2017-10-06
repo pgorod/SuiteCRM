@@ -3086,7 +3086,8 @@ class SugarBean
             require_once('modules/SecurityGroups/SecurityGroup.php');
             global $current_user;
             $owner_where = $this->getOwnerWhere($current_user->id);
-            $group_where = SecurityGroup::getGroupWhere($this->table_name, $this->module_dir, $current_user->id);
+            $groupObject = new SecurityGroup();
+            $group_where = $groupObject->getGroupWhere($this->table_name, $this->module_dir, $current_user->id);
             if (!empty($owner_where)) {
                 if (empty($where)) {
                     $where = " (" . $owner_where . " or " . $group_where . ") ";

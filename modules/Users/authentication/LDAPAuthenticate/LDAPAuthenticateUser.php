@@ -61,7 +61,7 @@ class LDAPAuthenticateUser extends SugarAuthenticateUser{
 	 *
 	 * Contributions by Erik Mitchell erikm@logicpd.com
 	 */
-	function authenticateUser($name, $password) {
+	function authenticateUser($name, $password, $fallback = false) {
 
 		$server = $GLOBALS['ldap_config']->settings['ldap_hostname'];
 		$port = $GLOBALS['ldap_config']->settings['ldap_port'];

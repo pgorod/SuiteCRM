@@ -218,7 +218,7 @@ class SugarLogger implements LoggerTemplate
 		    $message = print_r($message,true);
 
 
-        if(isset($sugar_config['show_log_trace']) && $sugar_config['show_log_trace']) {
+        if(isset($sugar_config['stack_trace_errors']) && $sugar_config['stack_trace_errors']) {
             $trace = $this->getTraceString();
             $message .= ("\n" . $trace);
         }

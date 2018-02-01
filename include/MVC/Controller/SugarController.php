@@ -386,7 +386,9 @@ class SugarController
     protected function showException(Exception $e)
     {
         $GLOBALS['log']->fatal('Exception in Controller: ' . $e->getMessage());
-        $GLOBALS['log']->fatal("backtrace:\n" . $e->getTraceAsString());
+        if (isset($sugar_config['stack_trace_errors']) && $sugar_config['stack_trace_errors']) {
+            $GLOBALS['log']->fatal("backtrace:\n" . $e->getTraceAsString());
+        }
         if ($prev = $e->getPrevious()) {
             $GLOBALS['log']->fatal("Previous:\n");
             $this->showException($prev);

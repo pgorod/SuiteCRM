@@ -440,8 +440,7 @@ function dropdown_item_move_up($dropdown_type, $language, $index)
 		$i = 0;
 
 		reset($dropdown_array);
-		while(list($k, $v) = each($dropdown_array))
-		{
+		foreach($dropdown_array as $k => $v) {
 			if($i == $index)
 			{
 				$key = $k;
@@ -476,8 +475,7 @@ function dropdown_item_move_down($dropdown_type, $language, $index)
 		$i = 0;
 
 		reset($dropdown_array);
-		while(list($k, $v) = each($dropdown_array))
-		{
+        foreach($dropdown_array as $k => $v) {
 			if($i == $index)
 			{
 				$key = $k;
@@ -706,5 +704,3 @@ function app_string_duplicate_check($name, &$file_contents)
 	return $file_contents;
 
 }
-
-?>

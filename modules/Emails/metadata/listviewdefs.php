@@ -60,7 +60,7 @@ $viewdefs['Emails']['ListView'] = array(
                 ),
             'actions' => array(
                 array(
-                    'customCode' => '<a href="javascript:void(0)" class="parent-dropdown-handler" id="delete_listview_top" onclick="return false;"><label class="selected-actions-label hidden-mobile">{$APP.LBL_BULK_ACTION_BUTTON_LABEL_MOBILE}</label><label class="selected-actions-label hidden-desktop">{$APP.LBL_BULK_ACTION_BUTTON_LABEL}</label></a>',
+                    'customCode' => '<a href="javascript:void(0)" class="parent-dropdown-handler" id="delete_listview_top" onclick="return false;"><label class="selected-actions-label hidden-mobile">{$APP.LBL_BULK_ACTION_BUTTON_LABEL_MOBILE}<span class=\'suitepicon suitepicon-action-caret\'></span></label><label class="selected-actions-label hidden-desktop">{$APP.LBL_BULK_ACTION_BUTTON_LABEL}</label></a>',
                 ),
                 array(
                     'customCode' => '<a data-action="emails-import-multiple" title="{$MOD.LBL_IMPORT}">{$MOD.LBL_IMPORT}</a>'
@@ -139,7 +139,7 @@ $listViewDefs['Emails'] = array(
     'HAS_ATTACHMENT' => array(
         'width' => '32',
         'label' => 'LBL_HAS_ATTACHMENT_INDICATOR',
-        'default' => true,
+        'default' => false,
         'sortable' => false,
         'hide_header_label' => true,
     ),

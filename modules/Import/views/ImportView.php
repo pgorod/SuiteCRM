@@ -63,6 +63,15 @@ class ImportView extends SugarView
         
     }
 
+    public function preDisplay() {
+        if (!is_file('cache/jsLanguage/Import/' . $GLOBALS['current_language'] . '.js')) {
+            require_once ('include/language/jsLanguage.php');
+            jsLanguage::createModuleStringsCache('Import', $GLOBALS['current_language']);
+        }
+        echo '<script src="cache/jsLanguage/Import/'. $GLOBALS['current_language'] . '.js"></script>';
+        parent::preDisplay();
+    }
+
     /**
      * @see SugarView::getMenu()
      */
@@ -119,7 +128,11 @@ class ImportView extends SugarView
             'script'        => $script);
 
         if($encode){
-            array_walk($out, create_function('&$val', '$val = htmlspecialchars($val,ENT_NOQUOTES);'));
+            $function = function (&$val) {
+                $val = htmlspecialchars($val,ENT_NOQUOTES);
+            };
+
+            array_walk($out, $function);
         }
         echo json_encode($out);
     }

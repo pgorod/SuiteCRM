@@ -118,7 +118,7 @@ $dictionary['Email'] = array(
         ),
         'description_html' => array(
             'name' => 'description_html',
-            'type' => 'html',
+            'type' => 'emailbody',
             'vname' => 'description_html',
             'source' => 'non-db',
             'inline_edit' => false,
@@ -582,6 +582,23 @@ $dictionary['Email'] = array(
             'reportable' => false,
             'side' => 'left',
             'vname' => 'LBL_EMAIL_TEMPLATE',
+        ),
+        'opt_in' => array(
+            'name' => 'opt_in',
+            'vname' => 'LBL_OPT_IN',
+            'type' => 'function',
+            'source' => 'non-db',
+            'massupdate' => 0,
+            'importable' => 'false',
+            'duplicate_merge' => 'disabled',
+            'studio' => 'visible',
+            'inline_edit' => false,
+            'function' => array(
+                'name' => 'displayEmailAddressOptInField',
+                'returns' => 'html',
+                'include' => 'modules/Emails/include/displayEmailAddressOptInField.php',
+                'onListView' =>  true
+            ),
         ),
     ), /* end fields() array */
     'relationships' => array(

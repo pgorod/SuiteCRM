@@ -201,9 +201,23 @@ function getPostToForm($ignore='', $isRegularExpression=false)
 
 function getGetToForm($ignore='', $usePostAsAuthority = false)
 {
+    global $log;
 	$fields = '';
-	foreach ($_GET as $key=>$value)
+	foreach ($_GET as $key => $value)
 	{
+	    if(is_array($key)) {
+            if(!empty($key)) {
+                $log->warn('$key must be a string');
+            }
+	        continue;
+        }
+
+        if (is_array($value)) {
+            if(!empty($value)) {
+                $log->warn('$value must be a string');
+            }
+	        continue;
+        }
 		if($key != $ignore){
 			if(!$usePostAsAuthority || !isset($_POST[$key])){
 				$fields.= "<input type='hidden' name='$key' value='$value'>";
@@ -504,5 +518,3 @@ function save_from_report($report_id,$parent_id, $module_name, $relationship_att
         $focus->$relationship_attr_name->add($reportBean);
     }
 }
-
-?>

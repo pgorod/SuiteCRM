@@ -229,10 +229,10 @@ class ListViewDataEmails extends ListViewData
     }
 
     /**
-     * @param $folder
-     * @param $inboundEmail
+     * @param Folder $folder
+     * @param InboundEmail $inboundEmail
      */
-    private function setInboundEmailMailbox($folder, $inboundEmail)
+    private function setInboundEmailMailbox(Folder $folder, InboundEmail $inboundEmail)
     {
         switch ($folder->getType()) {
             case "sent":
@@ -248,7 +248,7 @@ class ListViewDataEmails extends ListViewData
                 break;
 
             default:
-                $inboundEmail->mailbox = $folder->mailbox;
+                $inboundEmail->mailbox = empty($folder->id) ? '' : $folder->mailbox;
                 break;
         }
     }
@@ -541,8 +541,20 @@ class ListViewDataEmails extends ListViewData
                 $uid = $emailHeader['uid'];
                 $importedEmailBeans = BeanFactory::getBean('Emails');
                 $is_imported = $importedEmailBeans->get_full_list('',
-                    'emails.uid LIKE "' . $uid . '"');
-                if (count($is_imported) > 0) {
+                    'emails.uid LIKE "' . $uid . '"'); 
+                
+                if (null === $is_imported) {
+                    $is_imported = [];
+                }
+                
+                if ($is_imported instanceof Countable) {
+                    $count = count($is_imported);
+                } else {
+                    LoggerManager::getLogger()->warn('ListViewDataEmails::getEmailRecordFieldValue: email list should be a Countable');
+                    $count = count((array)$is_imported);
+                }
+                
+                if ($count > 0) {
                     $ret = true;
                 } else {
                     $ret = false;
@@ -611,8 +623,8 @@ class ListViewDataEmails extends ListViewData
         return
             (isset($request["searchFormTab"]) && $request["searchFormTab"] == "advanced_search") ||
             (
-                isset($request["type_basic"]) && count($request["type_basic"]) > 1 ||
-                $request["type_basic"][0] != ""
+                isset($request["type_basic"]) && (count($request["type_basic"]) > 1 ||
+                $request["type_basic"][0] != "")
             ) ||
             (isset($request["module"]) && $request["module"] == "MergeRecords");
     }
@@ -706,8 +718,18 @@ class ListViewDataEmails extends ListViewData
 
                     $search = new ListViewDataEmailsSearchOnCrm($this);
                     $ret = $search->search(
-                        $filter_fields, $request, $where, $inboundEmail, $params, $seed,
-                        $singleSelect, $id, $limit, $current_user, $id_field, $offset
+                        $filter_fields,
+                        $request,
+                        $where,
+                        $inboundEmail,
+                        $params,
+                        $seed,
+                        $singleSelect,
+                        $id,
+                        $limit,
+                        $current_user,
+                        $id_field,
+                        $offset
                     );
 
                     break;
@@ -717,7 +739,22 @@ class ListViewDataEmails extends ListViewData
                     $limitPerPage = isset($sugar_config['list_max_entries_per_page']) && (int)$sugar_config['list_max_entries_per_page'] ? $sugar_config['list_max_entries_per_page'] : 10;
 
                     $search = new ListViewDataEmailsSearchOnIMap($this);
-                    $ret = $search->search($seed, $request, $where, $id, $inboundEmail, $filter, $folderObj, $current_user, $folder, $limit, $limitPerPage);
+                    $ret = $search->search(
+                        $seed,
+                        $request,
+                        $where,
+                        $id,
+                        $inboundEmail,
+                        $filter,
+                        $folderObj,
+                        $current_user,
+                        $folder,
+                        $limit,
+                        $limitPerPage,
+                        $params,
+                        $pageData,
+                        $filter_fields
+                    );
                     break;
 
                 default:

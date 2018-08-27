@@ -38,7 +38,7 @@
 
 	//Setting Opportunity Values
 	$opportunity = new Opportunity();
-    $opportunity->name = $quote->name;
+    $opportunity->name = "From quote: $quote->name";
     $opportunity->assigned_user_id = $quote->assigned_user_id;
     $opportunity->amount = format_number($quote->total_amount);
     $opportunity->account_id = $quote->billing_account_id;
@@ -50,8 +50,13 @@
 
     $opportunity->save();
 
-	//Setting opportunity quote relationship
+    //Setting opportunity quote relationship
     $quote->load_relationship('opportunities');
     $quote->opportunities->add($opportunity->id);
-	ob_clean();
+
+    //Setting contacts quote relationship
+    $opportunity->load_relationship('contacts');
+    $opportunity->contacts->add($quote->billing_contact_id);
+
+    ob_clean();
 	header('Location: index.php?module=Opportunities&action=EditView&record='.$opportunity->id);

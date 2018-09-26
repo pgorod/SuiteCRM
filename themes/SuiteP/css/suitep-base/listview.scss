@@ -3098,7 +3098,7 @@ table.subpanel-table ul.subpanel a:hover {
   background-color: $list-view-header-bg;
 }
 
-table.subpanel-table .pagination a {
+table.subpanel-table .pagination a:not(.button) {
   background-color: $list-view-header-bg;
 }
 

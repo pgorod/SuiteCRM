@@ -367,7 +367,7 @@ div.sub-panel {
 .subpanel-table .pagination li.sugar_action_button:hover > form > a,
 .subpanel-table .pagination .sugar_action_button:hover > form > a,
 .subpanel-table .pagination .sugar_action_button:hover > form > a,
-.subpanel-table .pagination a,
+.subpanel-table .pagination a:not(.button),
 .subpanel-table .subnav {
   background-color: $panel-button-bg-hover;
 }

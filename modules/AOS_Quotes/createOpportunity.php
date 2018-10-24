@@ -50,11 +50,11 @@
 
     $opportunity->save();
 
-    //Setting opportunity quote relationship
+    //Setting opportunity-quote relationship
     $quote->load_relationship('opportunities');
     $quote->opportunities->add($opportunity->id);
 
-    //Setting contacts quote relationship
+    //Setting contacts-opportunity relationship
     $opportunity->load_relationship('contacts');
     $opportunity->contacts->add($quote->billing_contact_id);
 

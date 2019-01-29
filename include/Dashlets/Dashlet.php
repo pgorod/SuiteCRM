@@ -94,6 +94,7 @@ class Dashlet
      */
     var $autoRefresh = "0";
 
+    var $seedBean;
     /**
      * Constructor
      *

@@ -208,6 +208,10 @@ class ViewConfig extends SugarView
             throw new RuntimeException('System Email templates are missing');
         }
 
+        if (!isset($configurator->config['email_confirm_opt_in_email_template_id'])) {
+            throw new RuntimeException('email_confirm_opt_in_email_template_id is missing in the config. Please repair config.');
+        }
+
         $email_templates_options =  get_select_options_with_id($email_templates_arr, $configurator->config['email_confirm_opt_in_email_template_id']);
         $this->ss->assign('EMAIL_OPT_IN_TEMPLATES', $email_templates_options);
 

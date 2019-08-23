@@ -45,36 +45,46 @@
 <div class="dashletPanelMenu wizard">
 <div class="bd">
 
-		<div class="screen admin-panel">
+                <div class="screen admin-panel">
+
+{if isset($MY_FRAME)}
+    {$MY_FRAME}
+{else}
+    {log msg="MY_FRAME is not set"}
+{/if}
+
 {foreach  from=$ADMIN_GROUP_HEADER key=j item=val1}
 
    {if isset($GROUP_HEADER[$j][1])}
    <p>{$GROUP_HEADER[$j][0]}{$GROUP_HEADER[$j][1]}
-   <table class="other view">
+   <div class="row other view forheader">
 
    {else}
    <p>{$GROUP_HEADER[$j][0]}{$GROUP_HEADER[$j][2]}
-   <table class="other view">
+   <div class="row other view forheader">
    {/if}
 
     {assign var='i' value=0}
     {foreach  from=$VALUES_3_TAB[$j] key=link_idx item=admin_option}
-        <tr>
+        <div class="col-sm-6">
+          <div class="row forrows{$j}">
+
             {if isset($COLNUM[$j][$i])}
-                <td width="20%" scope="row">
+                <div class="col-sm-4">
                     <span class="suitepicon suitepicon-admin-{$ICONS[$j][$i]}"></span>
-                    <a id='{$ID_TAB[$j][$i]}' href='{$ITEM_URL[$j][$i]}' class="tabDetailViewDL2Link">{$ITEM_HEADER_LABEL[$j][$i]}</a>
-                </td>
-                <td width="30%">{$ITEM_DESCRIPTION[$j][$i]}</td>
+                    <a id='{$ID_TAB[$j][$i]}' href='{$ITEM_URL[$j][$i]}' class="tabDetailViewDL2Link">{$ITEM_HEADER_LAB$
+                </div>
+                <div class="col-sm-8">{$ITEM_DESCRIPTION[$j][$i]}</div>
             {else}
-                <td width="20%" scope="row">&nbsp;</td>
-                <td width="30%">&nbsp;</td>
+                <div class="col-sm-4">&nbsp;</div>
+                <div class="col-sm-8">&nbsp;</div>
             {/if}
-        </tr>
+            </div>
+       </div>
     {assign var='i' value=$i+1}
     {/foreach}
 
-</table>
+</div>
 <p/>
 {/foreach}
 
@@ -82,5 +92,3 @@
 </div>
 
 </div>
-
-

@@ -428,12 +428,14 @@ class ElasticSearchIndexer extends AbstractIndexer
             // Send a batch of $this->batchSize elements to the server
             if ($key % $this->batchSize == 0) {
                 $this->sendBatch($params);
+                unset($params);
             }
         }
 
         // Send the last batch if it exists
         if (!empty($params['body'])) {
             $this->sendBatch($params);
+            unset($params);
         }
     }
 

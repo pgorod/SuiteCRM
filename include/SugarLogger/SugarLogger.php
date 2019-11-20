@@ -167,6 +167,60 @@ class SugarLogger implements LoggerTemplate
         @touch($this->full_log_file);
     }
 
+    private function array_map_assoc(callable $f, array $a) {
+        return array_column(array_map($f, array_keys($a), $a), 1, 0);
+    }
+    private function getArguments( $funcName ) {
+    // https://stackoverflow.com/a/42600677/1189711
+            return array_map( function( $parameter ) { return $parameter->name; },
+            ($funcName!='__call') ? (new ReflectionFunction($funcName))->getParameters() : Array() );
+    }
+
+    private function getExceptionTraceAsString($exception) {
+        $rtn = "";
+        $count = 0;
+        foreach ($exception->getTrace() as $frame) {
+            $args = "";
+            try {
+                if (isset($frame['args'])) {
+                    $args = array();
+                    $argNames = array();
+                    $argNames = $this->getArguments($frame['function']);
+                    foreach ($frame['args'] as $arg) {
+                        if (is_string($arg)) {
+                            $args[] = "'" . $arg . "'";
+                        } elseif (is_array($arg)) {
+                            $args[] = "Array(" . count($arg) . " " . $argNames[1] . ")";
+                        } elseif (is_null($arg)) {
+                            $args[] = 'NULL';
+                        } elseif (is_bool($arg)) {
+                            $args[] = ($arg) ? "true" : "false";
+                        } elseif (is_object($arg)) {
+                            $args[] = get_class($arg);
+                        } elseif (is_resource($arg)) {
+                            $args[] = get_resource_type($arg);
+                        } else {
+                            $args[] = $arg;
+                        }
+                    }
+                    $args = join(", ", $args);
+                }
+            } catch(Exception $e) {
+                // if something fails when getting an arg while we're dumping a backtrace, we just skip it
+            }
+
+            $rtn .= sprintf(PHP_EOL."#%s %s(%s): %s(%s)",
+                $count,
+                isset($frame['file']) ? str_replace(SUGAR_PATH, '', $frame['file']) : 'unknown file',
+                isset($frame['line']) ? $frame['line'] : 'unknown line',
+                (isset($frame['class'])) ? $frame['class'] . $frame['type'] . $frame['function'] : $frame['function'],
+                $args);
+            $count++;
+        }
+
+        return $rtn;
+    }
+
     /**
      * see LoggerTemplate::log()
      */
@@ -178,8 +232,8 @@ class SugarLogger implements LoggerTemplate
         if (!$this->initialized) {
             return;
         }
-		//lets get the current user id or default to -none- if it is not set yet
-		$userID = (!empty($GLOBALS['current_user']->id))?$GLOBALS['current_user']->id:'-none-';
+		//lets get the current user id or default to - (none) if it is not set yet
+		$userID = (!empty($GLOBALS['current_user']->id))?$GLOBALS['current_user']->id:'-';
 
 		//if we haven't opened a file pointer yet let's do that
 		if (! $this->fp)$this->fp = fopen ($this->full_log_file , 'a' );
@@ -194,9 +248,18 @@ class SugarLogger implements LoggerTemplate
 
 		//write out to the file including the time in the dateFormat the process id , the user id , and the log level as well as the message
 		fwrite($this->fp,
-		    strftime($this->dateFormat) . ' [' . getmypid () . '][' . $userID . '][' . strtoupper($level) . '] ' . $message . "\n"
+		    strftime($this->dateFormat) . ' [' . getmypid () . '][' . $userID . '][' . str_pad(strtoupper($level), 5) . '] ' . $message . "\n"
 		    );
+
+		if (substr($message, -3)==='###') {
+            $e = new \Exception;
+            fwrite($this->fp,
+                "\n" . strftime($this->dateFormat) . ' [' . getmypid () . '][' . $userID . '][BACKTRACE] ' .
+                $this->getExceptionTraceAsString($e) . PHP_EOL . PHP_EOL
+            );
+        }
 	}
+
 
 	/**
 	 * rolls the logger file to start using a new file

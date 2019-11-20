@@ -307,6 +307,8 @@ class UnifiedSearchAdvanced {
 
                 $searchForm->setup (array ( $moduleName => array() ) , $unifiedSearchFields , '' , 'saved_views' /* hack to avoid setup doing further unwanted processing */ ) ;
                 $where_clauses = $searchForm->generateSearchWhere() ;
+                $searchDefsClause = $searchForm->retrieveSearchDefs($moduleName)['searchdefs'][$moduleName]['whereClause'];
+
                 //add inner joins back into the where clause
                 $params = array('custom_select' => "");
                 foreach($innerJoins as $field=>$def) {
@@ -322,6 +324,9 @@ class UnifiedSearchAdvanced {
                 if (count($where_clauses) > 0)
                 {
                     $where = '(('. implode(' ) OR ( ', $where_clauses) . '))';
+                    if (!is_null($searchDefsClause)) {
+                        $where.= ' '. str_replace('{1}',$this->query_string, $searchDefsClause). ' ';
+                    }
                 }
                 else
                 {

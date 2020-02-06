@@ -1,7 +1,8 @@
 <?php
 
+use SuiteCRM\Test\SuitePHPUnitFrameworkTestCase;
 
-class PathsTest extends SuiteCRM\StateCheckerPHPUnitTestCaseAbstract
+class PathsTest extends SuitePHPUnitFrameworkTestCase
 {
     /**
      * @var \UnitTester
@@ -29,8 +30,6 @@ class PathsTest extends SuiteCRM\StateCheckerPHPUnitTestCaseAbstract
             self::$projectPath = dirname(dirname(dirname(dirname(dirname(dirname(__DIR__))))));
         }
     }
-
-
 
     public function testGetProjectPath()
     {

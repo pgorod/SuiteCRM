@@ -168,7 +168,7 @@ function array_as_table($header, $values)
         $contents .= "<tr>";
         foreach ($field as $item) {
             if (is_array($item)) {
-                $item = join(",", $item);
+                $item = implode(",", $item);
             }
             $contents .= "<td class=\"tabDetailViewDF\">$item</td>";
         }
@@ -613,8 +613,11 @@ function executemd5($filesmd5, $md5calculated)
     $md5_string_calculated = generateMD5array('./');
 
     if ($md5calculated) {
-        write_array_to_file('md5_string_calculated', $md5_string_calculated,
-            $md5_directory . 'md5_array_calculated.php');
+        write_array_to_file(
+            'md5_string_calculated',
+            $md5_string_calculated,
+            $md5_directory . 'md5_array_calculated.php'
+        );
     }
 
 

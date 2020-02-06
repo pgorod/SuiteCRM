@@ -562,13 +562,15 @@ class Email extends Basic
      */
     public function __construct()
     {
-        global $current_user;
+        global $current_user, $sugar_config;
         $this->cachePath = sugar_cached('modules/Emails');
         parent::__construct();
 
         $this->emailAddress = new SugarEmailAddress();
 
-        $this->imagePrefix = rtrim($GLOBALS['sugar_config']['site_url'], "/") . "/cache/images/";
+        if (isset($sugar_config['site_url'])) {
+            $this->imagePrefix = $sugar_config['site_url'] . '/cache/images/';
+        }
     }
 
     /**
@@ -1542,7 +1544,7 @@ class Email extends Basic
             $GLOBALS['sugar_config']['email_address_separator'] :
             ',';
 
-        return join($separator, array_values($arr));
+        return implode($separator, array_values($arr));
     }
 
     /**
@@ -2524,8 +2526,7 @@ class Email extends Basic
         ////    ATTACHMENTS FROM DRAFTS
         if (($this->type == 'out' || $this->type == 'draft')
             && $this->status == 'draft'
-            && isset($_REQUEST['record'])
-            && empty($_REQUEST['ignoreParentAttachments'])) {
+            && isset($_REQUEST['record'])) {
             $this->getNotes($_REQUEST['record']); // cn: get notes from OLD email for use in new email
         }
         ////    END ATTACHMENTS FROM DRAFTS
@@ -2832,9 +2833,11 @@ class Email extends Basic
     {
         global $current_user;
 
-        // User preferences should takee precedence over everything else
+        // User preferences should take precedence over everything else
         $emailSettings = $current_user->getPreference('emailSettings', 'Emails');
-        $alwaysSendEmailsInPlainText = $emailSettings['sendPlainText'] === '1';
+        // Protect against accessing emailSettings as an array if it's null.
+        $sendPlainText = is_null($emailSettings) ? null : $emailSettings['sendPlainText'];
+        $alwaysSendEmailsInPlainText = $sendPlainText === '1';
 
         $sendEmailsInPlainText = false;
         if (isset($_REQUEST['is_only_plain_text']) && $_REQUEST['is_only_plain_text'] === 'true') {
@@ -2974,11 +2977,15 @@ class Email extends Basic
         $mail = $this->setMailer($mail, '', $ieId);
 
         if (($mail->oe->type === 'system') && (!isset($sugar_config['email_allow_send_as_user']) || (!$sugar_config['email_allow_send_as_user']))) {
-            $mail->From =
-            $sender =
-            $ReplyToAddr = $mail->oe->smtp_from_addr;
+            $fromAddr = $mail->oe->smtp_from_addr;
+            $fromName = $mail->oe->smtp_from_name;
+
+            $mail->From = $fromAddr;
+            $sender = $fromAddr;
+            $ReplyToAddr = $fromAddr;
             isValidEmailAddress($mail->From);
-            $ReplyToName = $mail->oe->smtp_from_name;
+            $ReplyToName = $fromName;
+            $mail->FromName = $fromName;
         } else {
 
             // FROM ADDRESS
@@ -3023,8 +3030,8 @@ class Email extends Basic
         isValidEmailAddress($mail->Sender);
         $mail->AddReplyTo($ReplyToAddr, $locale->translateCharsetMIME(trim($ReplyToName), 'UTF-8', $OBCharset));
 
-        //$mail->Subject = html_entity_decode($this->name, ENT_QUOTES, 'UTF-8');
-        $mail->Subject = $this->name;
+        $mail->Subject = html_entity_decode($this->name, ENT_QUOTES, 'UTF-8');
+        //$mail->Subject = $this->name;
 
         ///////////////////////////////////////////////////////////////////////
         ////	ATTACHMENTS
@@ -3243,7 +3250,7 @@ class Email extends Basic
          */
         if (!ACLController::moduleSupportsACL($this->parent_type) || ACLController::checkAccess(
             $this->parent_type,
-                'view',
+            'view',
             $is_owner,
             'module',
             $in_group
@@ -3588,55 +3595,55 @@ class Email extends Basic
                 case 'support':
                     $email_fields['CREATE_RELATED'] = '<a href="index.php?module=Cases&action=EditView&inbound_email_id=' . $this->id . '" >' . SugarThemeRegistry::current()->getImage(
                         'CreateCases',
-                            'border="0"',
+                        'border="0"',
                         null,
                         null,
                         ".gif",
-                            $mod_strings['LBL_CREATE_CASES']
+                        $mod_strings['LBL_CREATE_CASES']
                     ) . $mod_strings['LBL_CREATE_CASE'] . '</a>';
                     break;
 
                 case 'sales':
                     $email_fields['CREATE_RELATED'] = '<a href="index.php?module=Leads&action=EditView&inbound_email_id=' . $this->id . '" >' . SugarThemeRegistry::current()->getImage(
                         'CreateLeads',
-                            'border="0"',
+                        'border="0"',
                         null,
                         null,
                         ".gif",
-                            $mod_strings['LBL_CREATE_LEADS']
+                        $mod_strings['LBL_CREATE_LEADS']
                     ) . $mod_strings['LBL_CREATE_LEAD'] . '</a>';
                     break;
 
                 case 'contact':
                     $email_fields['CREATE_RELATED'] = '<a href="index.php?module=Contacts&action=EditView&inbound_email_id=' . $this->id . '" >' . SugarThemeRegistry::current()->getImage(
                         'CreateContacts',
-                            'border="0"',
+                        'border="0"',
                         null,
                         null,
                         ".gif",
-                            $mod_strings['LBL_CREATE_CONTACTS']
+                        $mod_strings['LBL_CREATE_CONTACTS']
                     ) . $mod_strings['LBL_CREATE_CONTACT'] . '</a>';
                     break;
 
                 case 'bug':
                     $email_fields['CREATE_RELATED'] = '<a href="index.php?module=Bugs&action=EditView&inbound_email_id=' . $this->id . '" >' . SugarThemeRegistry::current()->getImage(
                         'CreateBugs',
-                            'border="0"',
+                        'border="0"',
                         null,
                         null,
                         ".gif",
-                            $mod_strings['LBL_CREATE_BUGS']
+                        $mod_strings['LBL_CREATE_BUGS']
                     ) . $mod_strings['LBL_CREATE_BUG'] . '</a>';
                     break;
 
                 case 'task':
                     $email_fields['CREATE_RELATED'] = '<a href="index.php?module=Tasks&action=EditView&inbound_email_id=' . $this->id . '" >' . SugarThemeRegistry::current()->getImage(
                         'CreateTasks',
-                            'border="0"',
+                        'border="0"',
                         null,
                         null,
                         ".gif",
-                            $mod_strings['LBL_CREATE_TASKS']
+                        $mod_strings['LBL_CREATE_TASKS']
                     ) . $mod_strings['LBL_CREATE_TASK'] . '</a>';
                     break;
 
@@ -3686,9 +3693,9 @@ class Email extends Basic
             $mod_strings = return_module_language($current_language, 'Emails');
         }
 
-        return $mod_strings['LBL_QUICK_CREATE'] . "&nbsp;<a id='$this->id' onclick='return quick_create_overlib(\"{$this->id}\", \"" . SugarThemeRegistry::current()->__toString() . "\", this);' href=\"#\" >" . SugarThemeRegistry::current()->getImage(
+        return $mod_strings['LBL_QUICK_CREATE'] . "&nbsp;<a id='$this->id' onclick='return quick_create_overlib(\"{$this->id}\", \"" . (string)SugarThemeRegistry::current() . "\", this);' href=\"#\" >" . SugarThemeRegistry::current()->getImage(
             "advanced_search",
-                "border='0' align='absmiddle'",
+            "border='0' align='absmiddle'",
             null,
             null,
             '.gif',
@@ -3881,34 +3888,36 @@ class Email extends Basic
     }
 
     /**
+     * @return array|string
      * @global $timedate
      * Generate the where clause for searching imported emails.
-     * @return array|string
      */
     public function _generateSearchImportWhereClause()
     {
         global $timedate;
+
+        $db = DBManagerFactory::getInstance();
 
         //The clear button was removed so if a user removes the asisgned user name, do not process the id.
         if (empty($_REQUEST['assigned_user_name']) && !empty($_REQUEST['assigned_user_id'])) {
             unset($_REQUEST['assigned_user_id']);
         }
 
-        $availableSearchParam = array(
-            'name' => array('table_name' => 'emails'),
-            'data_parent_id_search' => array('table_name' => 'emails', 'db_key' => 'parent_id', 'opp' => '='),
-            'assigned_user_id' => array('table_name' => 'emails', 'opp' => '=')
-        );
+        $availableSearchParam = [
+            'name' => ['table_name' => 'emails'],
+            'data_parent_id_search' => ['table_name' => 'emails', 'db_key' => 'parent_id', 'opp' => '='],
+            'assigned_user_id' => ['table_name' => 'emails', 'opp' => '=']
+        ];
 
-        $additionalWhereClause = array();
+        $additionalWhereClause = [];
         foreach ($availableSearchParam as $key => $properties) {
             if (!empty($_REQUEST[$key])) {
                 $db_key = isset($properties['db_key']) ? $properties['db_key'] : $key;
                 $searchValue = $this->db->quote($_REQUEST[$key]);
 
                 $opp = isset($properties['opp']) ? $properties['opp'] : 'like';
-                if ($opp == 'like') {
-                    $searchValue = "%" . $searchValue . "%";
+                if ($opp === 'like') {
+                    $searchValue = '%' . $searchValue . '%';
                 }
 
                 $additionalWhereClause[] = "{$properties['table_name']}.$db_key $opp '$searchValue' ";
@@ -3918,29 +3927,29 @@ class Email extends Basic
 
         $isDateFromSearchSet = !empty($_REQUEST['searchDateFrom']);
         $isdateToSearchSet = !empty($_REQUEST['searchDateTo']);
-        $bothDateRangesSet = $isDateFromSearchSet & $isdateToSearchSet;
+        $bothDateRangesSet = $isDateFromSearchSet && $isdateToSearchSet;
 
-        //Hanlde date from and to separately
+        // Handle date from and to separately
         if ($bothDateRangesSet) {
             $dbFormatDateFrom = $timedate->to_db_date($_REQUEST['searchDateFrom'], false);
-            $dbFormatDateFrom = db_convert("'" . $dbFormatDateFrom . "'", 'datetime');
+            $dbFormatDateFrom = $db->convert("'" . $dbFormatDateFrom . "'", 'datetime');
 
             $dbFormatDateTo = $timedate->to_db_date($_REQUEST['searchDateTo'], false);
-            $dbFormatDateTo = db_convert("'" . $dbFormatDateTo . "'", 'datetime');
+            $dbFormatDateTo = $db->convert("'" . $dbFormatDateTo . "'", 'datetime');
 
             $additionalWhereClause[] = "( emails.date_sent_received >= $dbFormatDateFrom AND
                                           emails.date_sent_received <= $dbFormatDateTo )";
         } elseif ($isdateToSearchSet) {
             $dbFormatDateTo = $timedate->to_db_date($_REQUEST['searchDateTo'], false);
-            $dbFormatDateTo = db_convert("'" . $dbFormatDateTo . "'", 'datetime');
+            $dbFormatDateTo = $db->convert("'" . $dbFormatDateTo . "'", 'datetime');
             $additionalWhereClause[] = "emails.date_sent_received <= $dbFormatDateTo ";
         } elseif ($isDateFromSearchSet) {
             $dbFormatDateFrom = $timedate->to_db_date($_REQUEST['searchDateFrom'], false);
-            $dbFormatDateFrom = db_convert("'" . $dbFormatDateFrom . "'", 'datetime');
+            $dbFormatDateFrom = $db->convert("'" . $dbFormatDateFrom . "'", 'datetime');
             $additionalWhereClause[] = "emails.date_sent_received >= $dbFormatDateFrom ";
         }
 
-        $additionalWhereClause = implode(" AND ", $additionalWhereClause);
+        $additionalWhereClause = implode(' AND ', $additionalWhereClause);
 
         return $additionalWhereClause;
     }
@@ -4204,16 +4213,16 @@ eoq;
             null,
             null,
             ".gif",
-                $mod_strings['LBL_USERS']
+            $mod_strings['LBL_USERS']
         ) . '</a>&nbsp;
 				<a href="#" id="showUsers" onClick="javascript:showUserSelect();">
 					<span style="display:none;" id="checkMark">' . SugarThemeRegistry::current()->getImage(
-                    'check_inline',
-                'border="0"',
-                    null,
-                    null,
-                    ".gif",
-                    $mod_strings['LBL_CHECK_INLINE']
+            'check_inline',
+            'border="0"',
+            null,
+            null,
+            ".gif",
+            $mod_strings['LBL_CHECK_INLINE']
                 ) . '</span>
 				</a>
 
@@ -4224,7 +4233,7 @@ eoq;
 						<td  colspan="' . $colspan . '" id="hiddenhead" onClick="hideUserSelect();" onMouseOver="this.style.border = \'outset red 1px\';" onMouseOut="this.style.border = \'inset white 0px\';this.style.borderBottom = \'inset red 1px\';">
 							<a href="#" onClick="javascript:hideUserSelect();">' . SugarThemeRegistry::current()->getImage(
                     'close',
-                'border="0"',
+                    'border="0"',
                     null,
                     null,
                     ".gif",

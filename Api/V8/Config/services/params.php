@@ -3,7 +3,7 @@
 use Api\V8\BeanDecorator\BeanManager;
 use Api\V8\Factory\ValidatorFactory;
 use Api\V8\Param;
-use Interop\Container\ContainerInterface as Container;
+use Psr\Container\ContainerInterface as Container;
 use Api\Core\Loader\CustomLoader;
 
 return CustomLoader::mergeCustomArray([
@@ -63,6 +63,12 @@ return CustomLoader::mergeCustomArray([
     },
     Param\CreateRelationshipParams::class => function (Container $container) {
         return new Param\CreateRelationshipParams(
+            $container->get(ValidatorFactory::class),
+            $container->get(BeanManager::class)
+        );
+    },
+    Param\CreateRelationshipByLinkParams::class => function (Container $container) {
+        return new Param\CreateRelationshipByLinkParams(
             $container->get(ValidatorFactory::class),
             $container->get(BeanManager::class)
         );

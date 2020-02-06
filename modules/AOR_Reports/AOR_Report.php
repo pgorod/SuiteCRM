@@ -347,13 +347,13 @@ class AOR_Report extends Basic
 
                         foreach ($values as $value) {
                             $moduleFieldByGroupValue = $this->getModuleFieldByGroupValue(
-                                    $beanList,
-                                    $value[$pth['field_id_name']]
+                                $beanList,
+                                $value[$pth['field_id_name']]
                                 );
                             $moduleFieldByGroupValue = $this->addDataIdValueToInnertext($moduleFieldByGroupValue);
                             $html .= $this->getMultiGroupFrameHTML(
-                                    $moduleFieldByGroupValue,
-                                    $this->build_group_report($offset, $links)
+                                $moduleFieldByGroupValue,
+                                $this->build_group_report($offset, $links)
                                 );
                         }
                     }
@@ -478,7 +478,7 @@ class AOR_Report extends Basic
 
             if ($data['type'] == 'currency' && !stripos(
                 $field->field,
-                    '_USD'
+                '_USD'
             ) && isset($field_module->field_defs['currency_id'])
             ) {
                 if ((isset($field_module->field_defs['currency_id']['source']) && $field_module->field_defs['currency_id']['source'] == 'custom_fields')) {
@@ -826,7 +826,12 @@ class AOR_Report extends Basic
                     if ($att['function'] == 'COUNT' || !empty($att['format'])) {
                         $html .= $row[$name];
                     } else {
-                        $params = array('record_id' => $row[$att['alias'] . '_id']);
+                        // Make sure the `{$module}_id` key exists on $row, to prevent PHP notices.
+                        if (isset($row[$att['alias'] . '_id'])) {
+                            $params = array('record_id' => $row[$att['alias'] . '_id']);
+                        } else {
+                            $params = [];
+                        }
                         $html .= getModuleField(
                             $att['module'],
                             $att['field'],
@@ -883,6 +888,7 @@ class AOR_Report extends Basic
 
     private function getModuleFieldByGroupValue($beanList, $group_value)
     {
+        global $app_list_strings;
         $moduleFieldByGroupValues = array();
 
         $sql = "SELECT id FROM aor_fields WHERE aor_report_id = '" . $this->id . "' AND group_display = 1 AND deleted = 0 ORDER BY field_order ASC";
@@ -899,8 +905,10 @@ class AOR_Report extends Basic
                     $related_bean = BeanFactory::getBean($field_def['module']);
                     $related_bean->retrieve($group_value);
                     $moduleFieldByGroupValues[] = ($related_bean instanceof Person) ? $related_bean->full_name : $related_bean->name;
+                } elseif ($field_def['type'] == 'enum') {
+                    $moduleFieldByGroupValues[] = $app_list_strings[$field_def['options']][$group_value];
                 } else {
-                    $moduleFieldByGroupValues[] = $group_value;
+                     $moduleFieldByGroupValues[] = $group_value;
                 }
                 continue;
                 // End
@@ -947,7 +955,7 @@ class AOR_Report extends Basic
         $currency->retrieve($GLOBALS['current_user']->getPreference('currency'));
 
         $showTotal = false;
-        $html = '<table>';
+        $html = "<table width='100%' class='list view table-responsive aor_reports'>";
         $html .= "<thead class='fc-head'>";
         $html .= "<tr>";
         foreach ($fields as $label => $field) {
@@ -992,41 +1000,21 @@ class AOR_Report extends Basic
             if ($field['total'] && isset($totals[$label])) {
                 $type = $field['total'];
                 $total = $this->calculateTotal($type, $totals[$label]);
-                // Customise display based on the field type
-                $moduleBean = BeanFactory::newBean(isset($field['module']) ? $field['module'] : null);
-                if (!is_object($moduleBean)) {
-                    LoggerManager::getLogger()->warn('Unable to create new module bean when trying to build report html. Module bean was: ' . (isset($field['module']) ? $field['module'] : 'NULL'));
-                    $moduleBeanFieldDefs = null;
-                } elseif (!isset($moduleBean->field_defs)) {
-                    LoggerManager::getLogger()->warn('File definition not found for module when trying to build report html. Module bean was: ' . get_class($moduleBean));
-                    $moduleBeanFieldDefs = null;
-                } else {
-                    $moduleBeanFieldDefs = $moduleBean->field_defs;
-                }
-                $fieldDefinition = $moduleBeanFieldDefs[isset($field['field']) ? $field['field'] : null];
-                $fieldDefinitionType = $fieldDefinition['type'];
-                switch ($fieldDefinitionType) {
-                    case "currency":
-                        // Customise based on type of function
-                        switch ($type) {
-                            case 'SUM':
-                            case 'AVG':
-                                if ($currency->id == -99) {
-                                    $total = $currency->symbol . format_number($total, null, null);
-                                } else {
-                                    $total = $currency->symbol . format_number(
-                                        $total,
-                                        null,
-                                        null,
-                                            array('convert' => true)
-                                    );
-                                }
-                                break;
-                            case 'COUNT':
-                            default:
-                                break;
-                        }
+                switch ($type) {
+                    case 'SUM':
+                    case 'AVG':
+                        $total = getModuleField(
+                            $field['module'],
+                            $field['field'],
+                            $field['field'],
+                            'DetailView',
+                            $total,
+                            '',
+                            $currency->id,
+                            $field['params']
+                        );
                         break;
+                    case 'COUNT':
                     default:
                         break;
                 }
@@ -1126,14 +1114,27 @@ class AOR_Report extends Basic
                     if ($att['function'] != '' || $att['format'] != '') {
                         $csv .= $this->encloseForCSV($row[$name]);
                     } else {
-                        $t = getModuleField($att['module'], $att['field'], $att['field'], 'DetailView', $row[$name], '',
-                            $currency_id);
+                        $t = getModuleField(
+                            $att['module'],
+                            $att['field'],
+                            $att['field'],
+                            'DetailView',
+                            $row[$name],
+                            '',
+                            $currency_id
+                        );
                         if (false !== strpos($t, 'checkbox')) {
                             $csv .= $row[$name];
                         } else {
-                            $csv .= $this->encloseForCSV(trim(strip_tags(getModuleField($att['module'], $att['field'],
+                            $csv .= $this->encloseForCSV(trim(strip_tags(getModuleField(
+                                $att['module'],
                                 $att['field'],
-                                'DetailView', $row[$name], '', $currency_id))));
+                                $att['field'],
+                                'DetailView',
+                                $row[$name],
+                                '',
+                                $currency_id
+                            ))));
                         }
                     }
                     $csv .= $delimiter;
@@ -1143,22 +1144,8 @@ class AOR_Report extends Basic
             $csv = substr($csv, 0, strlen($csv) - strlen($delimiter));
         }
 
-        $csv = $GLOBALS['locale']->translateCharset($csv, 'UTF-8', $GLOBALS['locale']->getExportCharset());
-
         ob_clean();
-        header("Pragma: cache");
-        header("Content-type: text/comma-separated-values; charset=" . $GLOBALS['locale']->getExportCharset());
-        header("Content-Disposition: attachment; filename=\"{$this->name}.csv\"");
-        header("Content-transfer-encoding: binary");
-        header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-        header("Last-Modified: " . TimeDate::httpTime());
-        header("Cache-Control: post-check=0, pre-check=0", false);
-        header("Content-Length: " . mb_strlen($csv, '8bit'));
-        if (!empty($sugar_config['export_excel_compatible'])) {
-            $csv = chr(255) . chr(254) . mb_convert_encoding($csv, 'UTF-16LE', 'UTF-8');
-        }
-        print $csv;
-
+        printCSV($csv, $this->name);
         sugar_cleanup(true);
     }
 
@@ -1337,7 +1324,7 @@ class AOR_Report extends Basic
                     $field->field = 'id';
                 }
 
-                if ($data['type'] == 'currency' && isset($field_module->field_defs['currency_id'])) {
+                if ($data['type'] == 'currency' && isset($field_module->field_defs['currency_id']) && !stripos($field->field,'_USD')) {
                     if ((isset($field_module->field_defs['currency_id']['source']) && $field_module->field_defs['currency_id']['source'] == 'custom_fields')) {
                         $query['select'][$table_alias . '_currency_id'] = $this->db->quoteIdentifier($table_alias . '_cstm') . ".currency_id AS '" . $table_alias . "_currency_id'";
                         $query['second_group_by'][] = $this->db->quoteIdentifier($table_alias . '_cstm') . ".currency_id";
@@ -1478,6 +1465,7 @@ class AOR_Report extends Basic
 
     public function build_report_access_query(SugarBean $module, $alias)
     {
+        $module->table_name = $alias;
         $where = '';
         if ($module->bean_implements('ACL') && ACLController::requireOwner($module->module_dir, 'list')) {
             global $current_user;
@@ -1973,7 +1961,7 @@ class AOR_Report extends Basic
             }
             $query['where'][] = $module->table_name . ".deleted = 0 " . $this->build_report_access_query(
                 $module,
-                    $module->table_name
+                $module->table_name
             );
         }
 

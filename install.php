@@ -109,13 +109,6 @@ $timedate = TimeDate::getInstance();
 setPhpIniSettings();
 $locale = new Localization();
 
-if (get_magic_quotes_gpc() == 1) {
-    $_REQUEST = array_map("stripslashes_checkstrings", $_REQUEST);
-    $_POST = array_map("stripslashes_checkstrings", $_POST);
-    $_GET = array_map("stripslashes_checkstrings", $_GET);
-}
-
-
 $GLOBALS['log'] = LoggerManager::getLogger();
 $setup_sugar_version = $suitecrm_version;
 $install_script = true;
@@ -125,7 +118,7 @@ $install_script = true;
 $css = 'install/install.css';
 $icon = 'include/images/sugar_icon.ico';
 $sugar_md = 'include/images/sugar_md_open.png';
-$loginImage = 'include/images/sugarcrm_login.png';
+$loginImage = 'include/images/suitecrm_login.png';
 $common = 'install/installCommon.js';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -590,6 +583,9 @@ EOQ;
                 }
                 if (isset($_REQUEST['setup_db_collation'])) {
                     $_SESSION['setup_db_options']['collation'] = $_REQUEST['setup_db_collation'];
+		}
+		if(isset($_REQUEST['setup_db_charset'])) {
+                    $_SESSION['setup_db_options']['charset'] = $_REQUEST['setup_db_charset'];
                 }
                 $_SESSION['setup_site_admin_user_name']             = $_REQUEST['setup_site_admin_user_name'];
                 $_SESSION['setup_site_admin_password']              = $_REQUEST['setup_site_admin_password'];
@@ -649,6 +645,8 @@ EOQ;
         $_SESSION['oc_username']    = $_REQUEST['oc_username'];
         $_SESSION['oc_password']   	= $_REQUEST['oc_password'];
         $the_file = 'oc_convert.php';
+    } elseif ($next_step === 9) {
+        $the_file = $workflow[4];
     } else {
         $the_file = $workflow[$next_step];
     }
@@ -788,12 +786,12 @@ EOQ;
 }
 
 
-$the_file = clean_string($the_file, 'FILE');
+$the_file = 'install/' . clean_string($the_file, 'FILE');
 
-installerHook('pre_installFileRequire', array('the_file' => $the_file));
-
-// change to require to get a good file load error message if the file is not available.
-
-require('install/' . $the_file);
-
-installerHook('post_installFileRequire', array('the_file' => $the_file));
+if (is_file($the_file)) {
+    installerHook('pre_installFileRequire', ['the_file' => $the_file]);
+    require($the_file);
+    installerHook('post_installFileRequire', ['the_file' => $the_file]);
+} else {
+    LoggerManager::getLogger()->fatal('Install file not found: ' . $the_file);
+}

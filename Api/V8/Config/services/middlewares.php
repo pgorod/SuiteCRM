@@ -9,9 +9,10 @@ use Api\V8\OAuth2\Repository\ClientRepository;
 use Api\V8\OAuth2\Repository\RefreshTokenRepository;
 use Api\V8\OAuth2\Repository\ScopeRepository;
 use Api\V8\OAuth2\Repository\UserRepository;
-use Interop\Container\ContainerInterface as Container;
+use Psr\Container\ContainerInterface as Container;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\Grant\PasswordGrant;
+use League\OAuth2\Server\Grant\RefreshTokenGrant;
 use League\OAuth2\Server\ResourceServer;
 use Api\Core\Loader\CustomLoader;
 
@@ -45,7 +46,9 @@ return CustomLoader::mergeCustomArray([
                 $apiConfig
             );
             file_put_contents(
-                'Api/Core/Config/ApiConfig.php', $configFileContents, LOCK_EX
+                'Api/Core/Config/ApiConfig.php',
+                $configFileContents,
+                LOCK_EX
             );
         }
 
@@ -63,6 +66,17 @@ return CustomLoader::mergeCustomArray([
                 new UserRepository($container->get(BeanManager::class)),
                 new RefreshTokenRepository($container->get(BeanManager::class))
             ),
+            new \DateInterval('PT1H')
+        );
+
+        $refreshGrant = new RefreshTokenGrant(
+            new RefreshTokenRepository($container->get(BeanManager::class))
+        );
+
+        $refreshGrant->setRefreshTokenTTL(new \DateInterval('P1M'));
+
+        $server->enableGrantType(
+            $refreshGrant,
             new \DateInterval('PT1H')
         );
 

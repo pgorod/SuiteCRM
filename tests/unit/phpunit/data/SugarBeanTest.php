@@ -2,26 +2,21 @@
 include_once __DIR__ . '/SugarBeanMock.php';
 include_once __DIR__ . '/../../../../include/SubPanel/SubPanelDefinitions.php';
 
-use SuiteCRM\StateCheckerConfig;
-use SuiteCRM\Test\SuitePHPUnit_Framework_TestCase;
+use SuiteCRM\Test\SuitePHPUnitFrameworkTestCase;
 
 /** @noinspection PhpUndefinedClassInspection */
-class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
+class SugarBeanTest extends SuitePHPUnitFrameworkTestCase
 {
-
-
     /**
      * @var array
      */
     protected $fieldDefsStore;
-    
 
     public function setUp()
     {
         parent::setUp();
         $this->fieldDefsStore();
     }
-
 
     public function tearDown()
     {
@@ -47,6 +42,22 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
     {
         $object = new Contact();
         $object->field_defs = $this->fieldDefsStore[$key]['Contact'];
+    }
+
+    public function testFactoryGetCachedDeleted()
+    {
+        // Create a lead and cache it
+        $lead = new Lead();
+        $lead->save();
+
+        $bean = BeanFactory::getBean($lead->module_dir, $lead->id);
+        $this->assertNotEmpty($bean);
+
+        // Don't return a cached result if the bean was deleted
+        $lead->mark_deleted($lead->id);
+        $this->assertEmpty(BeanFactory::getBean($lead->module_dir, $lead->id));
+        // Unless explicitly specified
+        $this->assertNotEmpty(BeanFactory::getBean($lead->module_dir, $lead->id, [], false));
     }
 
     /**
@@ -828,7 +839,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testBuildSubQueriesForUnion()
     {
-
         // test
         $bean = new SugarBeanMock();
         $panel =
@@ -901,12 +911,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
     public function testProcessUnionListQuery()
     {
         self::markTestIncomplete('environment dependency');
-
-        // save state
-
-        $state = new \SuiteCRM\StateSaver();
-        $state->pushTable('aod_index');
-        $state->pushTable('tracker');
 
         // test
         global $sugar_config;
@@ -1249,20 +1253,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
             $query .= (implode(', ', $quoteds)) . ')';
             DBManagerFactory::getInstance()->query($query);
         }
-        
-        // clean up
-        
-        $state->popTable('tracker');
-        $state->popTable('aod_index');
-    }
-
-
-    /**
-     * @see SugarBean::_get_num_rows_in_query()
-     */
-    public function testGetNumRowsInQuery()
-    {
-        self::markTestIncomplete('already covered');
     }
 
     /**
@@ -1491,7 +1481,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testIsOwner()
     {
-
         // test
         $GLOBALS['log']->reset();
         $bean = new SugarBeanMock();
@@ -1564,7 +1553,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetCustomTableName()
     {
-
         // test
         $GLOBALS['log']->reset();
         $bean = new Contact();
@@ -1604,7 +1592,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetObjectName()
     {
-
         // test
         $GLOBALS['log']->reset();
         $bean = new Contact();
@@ -1643,7 +1630,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetIndices()
     {
-
         // test
         $GLOBALS['log']->reset();
         $bean = new Contact();
@@ -1722,7 +1708,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetPrimaryFieldDefinition()
     {
-
         // test
         $GLOBALS['log']->reset();
         $bean = new Contact();
@@ -1771,7 +1756,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetFieldDefinition()
     {
-
         // test
         $GLOBALS['log']->reset();
         $GLOBALS['log']->fatal('test');
@@ -1822,7 +1806,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetFieldValue()
     {
-
         // test
         $GLOBALS['log']->reset();
         $GLOBALS['log']->fatal('test');
@@ -1861,10 +1844,91 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testUnPopulateDefaultValues()
     {
-
         // test
         $GLOBALS['log']->reset();
         $GLOBALS['log']->fatal('test');
+        $this->db->query(/** @lang sql */
+            "INSERT INTO contacts (
+            id, 
+            date_entered, 
+            date_modified, 
+            modified_user_id, 
+            created_by, 
+            description, 
+            deleted, 
+            assigned_user_id, 
+            salutation, 
+            first_name, 
+            last_name, 
+            title, 
+            photo, 
+            department, 
+            do_not_call, 
+            phone_home, 
+            phone_mobile, 
+            phone_work, 
+            phone_other, 
+            phone_fax, 
+            primary_address_street, 
+            primary_address_city, 
+            primary_address_state, 
+            primary_address_postalcode, 
+            primary_address_country, 
+            alt_address_street, 
+            alt_address_city, 
+            alt_address_state, 
+            alt_address_postalcode, 
+            alt_address_country, 
+            assistant, 
+            assistant_phone, 
+            lead_source, 
+            reports_to_id, 
+            birthdate, 
+            campaign_id, 
+            joomla_account_id, 
+            portal_account_disabled, 
+            portal_user_type
+            ) VALUES (
+            'test_parent_contact_1', 
+            '2017-08-04 00:00:11', 
+            '2017-08-11 00:00:22', 
+            'aaa', 
+            'bbb', 
+            'ccc', 
+            '0', 
+            'eee', 
+            'fff', 
+            'ggg', 
+            'hhh', 
+            'jjj', 
+            'kkk', 
+            'lll', 
+            '1', 
+            'mmm', 
+            'nnn', 
+            'ooo', 
+            'ppp', 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            NULL, 
+            'Single');"
+        );
         $bean = new Contact();
         /** @noinspection PhpVoidFunctionResultUsedInspection */
         $results = $bean->unPopulateDefaultValues();
@@ -1902,7 +1966,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testClone()
     {
-
         // test
         $GLOBALS['log']->reset();
         $GLOBALS['log']->fatal('test');
@@ -1926,19 +1989,10 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
     }
 
     /**
-     * @see SugarBean::load_relationships()
-     */
-    public function testLoadRelationships()
-    {
-        self::markTestIncomplete('already covered');
-    }
-
-    /**
      * @see SugarBean::get_linked_fields()
      */
     public function testGetLinkedFields()
     {
-
         // test
         $GLOBALS['log']->reset();
         $GLOBALS['log']->fatal('test');
@@ -1985,7 +2039,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetFieldDefinitions()
     {
-
         // test
         $GLOBALS['log']->reset();
         $GLOBALS['log']->fatal('test');
@@ -2000,7 +2053,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testLoadRelationship()
     {
-
         // test
         $GLOBALS['log']->reset();
         $GLOBALS['log']->fatal('test');
@@ -2127,7 +2179,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetLinkedBeans()
     {
-
         // test
         $GLOBALS['log']->reset();
         $GLOBALS['log']->fatal('test');
@@ -2170,7 +2221,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetImportRequiredFields()
     {
-
         // test
         $GLOBALS['log']->reset();
         $GLOBALS['log']->fatal('test');
@@ -2196,13 +2246,11 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
         self::assertCount(1, $GLOBALS['log']->calls['fatal']);
     }
 
-
     /**
      * @see SugarBean::create_tables()
      */
     public function testCreateTables()
     {
-
         // test
         $bean = new Contact();
         ob_start();
@@ -2231,7 +2279,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testIsAuditEnabled()
     {
-
         // test
         $bean = new SugarBeanMock();
         $results = $bean->is_AuditEnabled();
@@ -2248,7 +2295,6 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
      */
     public function testGetAuditTableNames()
     {
-
         // test
         $bean = new Contact();
         $results = $bean->get_audit_table_name();
@@ -2272,26 +2318,10 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
     }
 
     /**
-     * @see SugarBean::drop_tables()
-     */
-    public function testDropTables()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::save()
      */
     public function testSave()
     {
-        // save state
-
-        $state = new \SuiteCRM\StateSaver();
-        $state->pushTable('tracker');
-        $state->pushTable('aod_index');
-        $state->pushTable('users');
-        $state->pushGlobals();
-
         $userFieldDefs = BeanFactory::getBean('Users')->field_defs;
         $contactFieldDefs = BeanFactory::getBean('Contacts')->field_defs;
 
@@ -2573,14 +2603,9 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
         $this->db->query("DELETE FROM email_addr_bean_rel WHERE bean_id LIKE 'testBean_1'");
         $this->db->query("DELETE FROM email_addresses WHERE email_address LIKE 'testbean1@email.com'");
         
-        // clean up
+
         BeanFactory::getBean('Users')->field_defs = $userFieldDefs;
         BeanFactory::getBean('Contacts')->field_defs = $contactFieldDefs;
-
-        $state->popGlobals();
-        $state->popTable('users');
-        $state->popTable('aod_index');
-        $state->popTable('tracker');
     }
 
     /**
@@ -2933,19 +2958,10 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
     }
 
     /**
-     * @see SugarBean::_checkOptimisticLocking()
-     */
-    public function testCheckOptimisticLocking()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::has_been_modified_since()
      */
     public function testHasBeenModifiedSince()
     {
-
         // test
         $bean = new Contact();
         $results = $bean->has_been_modified_since(null, null);
@@ -3062,690 +3078,95 @@ class SugarBeanTest extends SuitePHPUnit_Framework_TestCase
     }
 
     /**
+     * TODO: Tests that need to be written.
+     * @see SugarBean::load_relationships()
      * @see SugarBean::toArray()
-     */
-    public function testToArray()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::save_relationship_changes()
-     */
-    public function testSaveRelationshipChanges()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::set_relationship_info()
-     */
-    public function testSetRelationshipInfo()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::handle_preset_relationships()
-     */
-    public function testHandlePresetRelationships()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::handle_remaining_relate_fields()
-     */
-    public function testHandleRemainingRelateFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::update_parent_relationships()
-     */
-    public function testUpdateParentRelationships()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::handle_request_relate()
-     */
-    public function testHandleRequestRelate()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::call_custom_logic()
-     */
-    public function testCallCustomLogic()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::hasEmails()
-     */
-    public function testHasEmails()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::preprocess_fields_on_save()
-     */
-    public function testPreprocessFieldsOnSave()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::_sendNotifications()
-     */
-    public function testSendNotifications()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_notification_recipients()
-     */
-    public function testGetNotificationRecipients()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::send_assignment_notifications()
-     */
-    public function testSendAssignmentNotifications()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::create_notification_email()
-     */
-    public function testCreateNotificationEmail()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::track_view()
-     */
-    public function testTrackView()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_summary_text()
-     */
-    public function testGetSummaryText()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::add_list_count_joins()
-     */
-    public function testAddListCountJoins()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_list()
-     */
-    public function testGetList()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::getOwnerWhere()
-     */
-    public function testGetOwnerWhere()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::create_new_list_query()
-     */
-    public function testCreateNewListQuery()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_relationship_field()
-     */
-    public function testGetRelationshipField()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::is_relate_field()
-     */
-    public function testIsRelateField()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::process_order_by()
-     */
-    public function testProcessOrderBy()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::process_list_query()
-     */
-    public function testProcessListQuery()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::create_list_count_query()
-     */
-    public function testCreateListCountQuery()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::fill_in_additional_list_fields()
-     */
-    public function testFillInAdditionalListFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_detail()
-     */
-    public function testGetDetail()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::process_detail_query()
-     */
-    public function testProcessDetailQuery()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::retrieve()
-     */
-    public function testRetrieve()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::getCustomJoin()
-     */
-    public function testGetCustomJoin()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::convertRow()
-     */
-    public function testConvertRow()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::convertField()
-     */
-    public function testConvertField()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::populateFromRow()
-     */
-    public function testPopulateFromRow()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::populateCurrencyFields()
-     */
-    public function testPopulateCurrencyFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::check_date_relationships_load()
-     */
-    public function testCheckDateRelationshipsLoad()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::decrypt_after_retrieve()
-     */
-    public function testDecryptAfterRetrieve()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::fill_in_additional_detail_fields()
-     */
-    public function testFillInAdditionalDetailFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::fill_in_additional_parent_fields()
-     */
-    public function testFillInAdditionalParentFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::getRelatedFields()
-     */
-    public function testGetRelatedFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::fill_in_relationship_fields()
-     */
-    public function testFillInRelationshipFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::fill_in_link_field()
-     */
-    public function testFillInLinkField()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_related_fields()
-     */
-    public function testGetRelatedFieldsSnakeCase()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_related_list()
-     */
-    public function testGetRelatedList()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_full_list()
-     */
-    public function testGetFullList()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::process_full_list_query()
-     */
-    public function testProcessFullListQuery()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::create_index()
-     */
-    public function testCreateIndex()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::mark_deleted()
-     */
-    public function testMarkDeleted()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::mark_undeleted()
-     */
-    public function testMarkUndeleted()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::restoreFiles()
-     */
-    public function testRestoreFiles()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::haveFiles()
-     */
-    public function testHaveFiles()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::getFiles()
-     */
-    public function testGetFiles()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::getFilesFields()
-     */
-    public function testGetFilesFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::deleteFileDirectory()
-     */
-    public function testDeleteFileDirectory()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::mark_relationships_deleted()
-     */
-    public function testMarkRelationshipsDeleted()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::delete_linked()
-     */
-    public function testDeleteLinked()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::deleteFiles()
-     */
-    public function testDeleteFiles()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::build_related_list()
-     */
-    public function testBuildRelatedList()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::build_related_list_where()
-     */
-    public function testBuildRelatedListWhere()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::build_related_in()
-     */
-    public function testBuildRelatedIn()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::build_related_list2()
-     */
-    public function testBuildRelatedList2()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::list_view_parse_additional_sections()
-     */
-    public function testListViewParseAdditionalSections()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_list_view_data()
-     */
-    public function testGetListViewData()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_list_view_array()
-     */
-    public function testGetListViewArray()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::retrieve_by_string_fields()
-     */
-    public function testRetrieveByStringFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::get_where()
-     */
-    public function testGetWhere()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::fromArray()
-     */
-    public function testFromArray()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::process_special_fields()
-     */
-    public function testProcessSpecialFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::build_generic_where_clause()
-     */
-    public function testBuildGenericWhereClause()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::parse_additional_headers()
-     */
-    public function testParseAdditionalHeaders()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::assign_display_fields()
-     */
-    public function testAssignDisplayFields()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::set_relationship()
-     */
-    public function testSetRelationship()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::retrieve_relationships()
-     */
-    public function testRetrieveRelationships()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::loadLayoutDefs()
-     */
-    public function testLoadLayoutDefs()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::getRealKeyFromCustomFieldAssignedKey()
-     */
-    public function testGetRealKeyFromCustomFieldAssignedKey()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::getOwnerField()
-     */
-    public function testGetOwnerField()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::listviewACLHelper()
-     */
-    public function testListviewACLHelper()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::ACLAccess()
-     */
-    public function testACLAccess()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::loadFromRow()
-     */
-    public function testLoadFromRow()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::create_qualified_order_by()
-     */
-    public function testCreateQualifiedOrderBy()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::add_address_streets()
-     */
-    public function testAddAddressStreets()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::populateRelatedBean()
-     */
-    public function testPopulateRelatedBean()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::beforeImportSave()
-     */
-    public function testBeforeImportSave()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::afterImportSave()
-     */
-    public function testAfterImportSave()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::create_export_query()
-     */
-    public function testCreateExportQuery()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::auditBean()
-     */
-    public function testAuditBean()
-    {
-        self::markTestIncomplete('need to implement');
-    }
-
-    /**
      * @see SugarBean::createAuditRecord()
+     * @see SugarBean::_checkOptimisticLocking()
+     * @see SugarBean::drop_tables()
      */
-    public function testCreateAuditRecord()
-    {
-        self::markTestIncomplete('need to implement');
-    }
 }

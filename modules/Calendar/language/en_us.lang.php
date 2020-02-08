@@ -166,6 +166,9 @@ $mod_strings = array(
     'LBL_BODY' => 'Body',
     'LBL_BORDER' => 'Border',
     'LBL_TEXT' => 'Text',
+    'LBL_SETTINGS_DAILY_DISPLAY_EVENT_LIMIT' => 'Event Limit',
+    'LBL_ALL' => 'All',
+    'LBL_SETTINGS_SHOW_WEEK_NUMBERS' => 'Show week numbers',
 );
 
 

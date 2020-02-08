@@ -140,6 +140,26 @@ $(function() {
 									</tr>
 									<tr>
 										<td scope="row" valign="top">
+											{$MOD.LBL_SETTINGS_DAILY_DISPLAY_EVENT_LIMIT}
+										</td>
+										<td>
+											<select size="1" id="event_limit" name="event_limit" tabindex="102">
+												{section name=var start=0 loop=8}
+													<option value="{$smarty.section.var.index}" {if $event_limit == $smarty.section.var.index}selected{/if}>{if $smarty.section.var.index === 0}{$MOD.LBL_ALL}{else}{$smarty.section.var.index}{/if}</option>
+												{/section}
+											</select>
+										</td>
+									</tr>
+									<tr>
+										<td scope="row" valign="top">
+											{$MOD.LBL_SETTINGS_SHOW_WEEK_NUMBERS}
+										</td>
+										<td>
+											<input type="checkbox" id="show_week_numbers" name="show_week_numbers" {if $show_week_numbers}checked{/if} value="1" tabindex="102" >
+										</td>
+									</tr>
+									<tr>
+										<td scope="row" valign="top">
 											{$MOD.LBL_SETTINGS_CALLS_SHOW}
 										</td>
 										<td>

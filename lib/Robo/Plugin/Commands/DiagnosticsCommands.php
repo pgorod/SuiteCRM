@@ -42,9 +42,11 @@ namespace SuiteCRM\Robo\Plugin\Commands;
 
 use SuiteCRM\Utility\Diagnostics;
 use SuiteCRM\Robo\Traits\RoboTrait;
+use Robo\Task\Base\loadTasks;
 
 class DiagnosticsCommands extends \Robo\Tasks
 {
+    use loadTasks;
     use RoboTrait;
 
     // define public methods as commands

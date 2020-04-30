@@ -48,13 +48,11 @@ class Diagnostics
 
         global $sugar_config;
 
-        if (!isset($_REQUEST['callerToken']) ||
-            !isset($sugar_config['cache_dir']) ||
-            strlen($_REQUEST['callerToken']) != 64) {
+        if (!isset($_REQUEST['callerToken']) || !isset($sugar_config['cache_dir'])) {
             return false;
         }
-        $tokenFilename = preg_replace("/[^a-z0-9]+/", "", $_REQUEST['callerToken']); // discard any unexpected characters
-        $tokenFilename = $sugar_config['cache_dir'] . $tokenFilename . '.tmp';
+
+        $tokenFilename = $sugar_config['cache_dir'] . $_REQUEST['callerToken'] . '.tmp';
 
         $timeStamp = filemtime($tokenFilename);
         if (($timeStamp === false) || // token file doesn't exist
@@ -84,6 +82,8 @@ class Diagnostics
 
             $post_data = [
                 'callerToken' => $token,
+                'module' => 'Administration',
+                'action' => 'DiagnosticQuickReport',
             ];
             // always make the call as localhost, but get any port number from the site_url, if present
             $url = preg_replace('/(.*):\/\/(.*?)((?::[0-9]+)|\/)(.*)/', '$1://localhost$3$4', $sugar_config['site_url']);

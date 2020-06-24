@@ -428,7 +428,7 @@ eoq;
         if ($current_user->getEmailClient() == 'sugar') {
             $html =<<<HTML
             <a class="email-link" href="mailto:{$addr}"
-                    onclick="$(document).openComposeViewModal(this);"
+                    onclick="currentModule='{$module_name}';$(document).openComposeViewModal(this);"
                     data-module="{$module_name}" data-record-id="{$record_id}"
                     data-module-name="{$name}" data-email-address="{$addr}"
                 >{$text}</a>
@@ -3252,9 +3252,12 @@ eoq;
             );
         }
 
-        //Retrieve the grou folders
+        //Retrieve the group folders
         $f = new SugarFolder();
-        $groupFolders = $f->getGroupFoldersForSettings($current_user);
+        try {
+            $groupFolders = $f->getGroupFoldersForSettings($current_user);
+        } catch (Exception $e) {
+        }
 
         foreach ($groupFolders as $singleGroup) {
             //Retrieve the related IE accounts.

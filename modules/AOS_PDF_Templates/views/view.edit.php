@@ -15,7 +15,7 @@ class AOS_PDF_TemplatesViewEdit extends ViewEdit
     {
         $this->setFields();
         parent::display();
-        $this->displayTMCE();
+        //$this->displayTMCE();
     }
 
     public function setFields()

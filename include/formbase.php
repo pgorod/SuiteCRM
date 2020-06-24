@@ -129,38 +129,6 @@ function populateFromPost($prefix, &$focus, $skipRetrieve = false, $checkACL = f
         } else {
             $GLOBALS['log']->fatal("Field '$field' does not have a SugarField handler");
         }
-
-        /*
-                if(isset($_POST[$prefix.$field])) {
-        			if(is_array($_POST[$prefix.$field]) && !empty($focus->field_defs[$field]['isMultiSelect'])) {
-        				if($_POST[$prefix.$field][0] === '' && !empty($_POST[$prefix.$field][1]) ) {
-        					unset($_POST[$prefix.$field][0]);
-        				}
-        				$_POST[$prefix.$field] = encodeMultienumValue($_POST[$prefix.$field]);
-        			}
-
-        			$focus->$field = $_POST[$prefix.$field];
-        			/*
-        			 * overrides the passed value for booleans.
-        			 * this will be fully deprecated when the change to binary booleans is complete.
-        			 /
-        			if(isset($focus->field_defs[$prefix.$field]) && $focus->field_defs[$prefix.$field]['type'] == 'bool' && isset($focus->field_defs[$prefix.$field]['options'])) {
-        				$opts = explode("|", $focus->field_defs[$prefix.$field]['options']);
-        				$bool = $_POST[$prefix.$field];
-
-        				if(is_int($bool) || ($bool === "0" || $bool === "1" || $bool === "2")) {
-        					// 1=on, 2=off
-        					$selection = ($_POST[$prefix.$field] == "0") ? 1 : 0;
-        				} elseif(is_bool($_POST[$prefix.$field])) {
-        					// true=on, false=off
-        					$selection = ($_POST[$prefix.$field]) ? 0 : 1;
-        				}
-        				$focus->$field = $opts[$selection];
-        			}
-        		} else if(!empty($focus->field_defs[$field]['isMultiSelect']) && !isset($_POST[$prefix.$field]) && isset($_POST[$prefix.$field . '_multiselect'])) {
-        			$focus->$field = '';
-        		}
-        */
     }
 
     foreach ($focus->additional_column_fields as $field) {

@@ -314,7 +314,72 @@ function getEditFieldHTML($module, $fieldname, $aow_field, $view = 'EditView', $
     $ss->assign("MOD", $mod_strings);
     $ss->assign("APP", $app_strings);
 
-    return json_encode($ss->fetch($file));
+    //return json_encode($ss->fetch($file));
+    return $ss->fetch($file);
+}
+
+function getValidationRules($current_module, $field, $id) {
+    global $app_strings, $mod_strings;
+
+    if ($field && $id && $current_module) {
+        $bean = BeanFactory::getBean($current_module, $id);
+
+        if (is_object($bean) && $bean->id != "") {
+            $fielddef = $bean->field_defs[$field];
+
+            if (!isset($fielddef['required']) || !$fielddef['required']) {
+                $fielddef['required'] = false;
+            }
+
+            if ($fielddef['name'] == "email1" || (isset($fielddef['email2']) && $fielddef['email2'])) {
+                $fielddef['type'] = "email";
+                $fielddef['vname'] = "LBL_EMAIL_ADDRESSES";
+            }
+
+            if (isset($app_strings[$fielddef['vname']])) {
+                $fielddef['label'] = $app_strings[$fielddef['vname']];
+            } else {
+                if (isset($mod_strings[$fielddef['vname']])) {
+                    $fielddef['label'] = $mod_strings[$fielddef['vname']];
+                } else {
+                    $GLOBALS['log']->warn("Unknown text label in a fielddef: {$fielddef['vname']}");
+                    if (!isset($fielddef['label'])) {
+                        $fielddef['label'] = null;
+                    }
+                }
+            }
+            $validate_array = array('type' => $fielddef['type'], 'required' => $fielddef['required'],'label' => $fielddef['label']);
+
+            return $validate_array;
+        }
+    }
+}
+
+function getRelateFieldJS($current_module, $field)
+{
+    global $beanFiles, $beanList;
+
+    //$fieldlist = array();
+    $view = "EditView";
+
+    if (!isset($focus) || !($focus instanceof SugarBean)) {
+        require_once($beanFiles[$beanList[$current_module]]);
+        $focus = new $beanList[$current_module];
+    }
+
+    // create the dropdowns for the parent type fields
+    $vardefFields[$field] = $focus->field_defs[$field];
+
+    require_once get_custom_file_if_exists('include/TemplateHandler/TemplateHandler.php');
+    $template_handler = new TemplateHandler();
+    $quicksearch_js = $template_handler->createQuickSearchCode($vardefFields, $vardefFields, $view);
+    $quicksearch_js = str_replace($field, $field . '_display', $quicksearch_js);
+
+    if ($field != "parent_name") {
+        $quicksearch_js = str_replace($vardefFields[$field]['id_name'], $field, $quicksearch_js);
+    }
+
+    return $quicksearch_js;
 }
 
 function saveField($field, $id, $module, $value)

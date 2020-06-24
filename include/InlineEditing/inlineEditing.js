@@ -143,9 +143,14 @@ function buildEditField() {
         //If we find all the required variables to do inline editing.
         if (field && id && module) {
             //Do ajax call to retrieve the validation for the field.
-            var validation = getValidationRules(field, module, id);
+            //var validation = getValidationRules(field, module, id);
             //Do ajax call to retrieve the html elements of the field.
-            var html = loadFieldHTML(field, module, id);
+            //var html = loadFieldHTML(field, module, id);
+
+            var fieldInfo = getInlineEditFieldInfo(field, module, id, type);
+            validation = fieldInfo['validationRules'];
+            //Do single ajax call to retrieve the html elements of the field AND the validationRules:
+            html = fieldInfo['editFieldHTML'];
 
             //If we have the field html append it to the div we clicked.
             if (html) {
@@ -160,7 +165,8 @@ function buildEditField() {
                 );
                 //If the field is a relate field we will need to retrieve the extra js required to make the field work.
                 if (type == "relate" || type == "parent") {
-                    var relate_js = getRelateFieldJS(field, module, id);
+                    //var relate_js = getRelateFieldJS(field, module, id);
+                    var relate_js = fieldInfo['relateFieldJS'];
                     $(_this).append(relate_js);
                     SUGAR.util.evalScript($(_this).html());
                     // Issue 2344 and 2499 changes - Dump existing QSProcessedFieldsArray to enable multiple QS on multiple rows.
@@ -239,8 +245,8 @@ function validateFormAndSave(field, id, module, type) {
             return false;
         }
     });
-    // also want to save on enter/return being pressed
-    $(document).keypress(function(e) {
+    // also want to save on enter/return being pressed. Using off/on to prevent multiple firings.
+    $(document).off('keypress').on('keypress', function(e) {
         if (e.which == 13 && !e.shiftKey) {
             e.preventDefault();
             $("#inlineEditSaveButton").click();
@@ -252,7 +258,7 @@ var ie_field, ie_id, ie_module, ie_type, ie_message_field;
 var clickListenerActive = false;
 
 /**
- * Checks if any of the parent elemenets of the current element have the class inlineEditActive this means they are within
+ * Checks if any of the parent elements of the current element have the class inlineEditActive this means they are within
  * the current element and have not clicked away from the field. Note we need to check on .cal_panel too for the calendar popup.
  * @param field - name of the field we are editing
  * @param id - the id of the record we are editing
@@ -489,6 +495,7 @@ function handleSave(field, id, module, type) {
 function setValueClose(value, replaceLinebreaks = true) {
     $.get(
         "themes/" + SUGAR.themes.theme_name + "/images/inline_edit_icon.svg",
+        "themes/" + SUGAR.themes.theme_name + "/images/inline_edit_icon.svg",
         function(data) {
             // Fix for #3136 - replace new line characters with <br /> for html on close.
             if (replaceLinebreaks) {
@@ -537,39 +544,6 @@ function saveFieldHTML(field, module, id, value, parent_type) {
 }
 
 /**
- * Ajax call to retrieve the html for a field.
- * Calls a controller action in /modules/Home/controller.
- * Returns the edit view field.
- * @param field
- * @param module
- * @param id
- * @param value
- * @returns {*}
- */
-function loadFieldHTML(field, module, id) {
-    $.ajaxSetup({ async: false });
-    var result = $.getJSON("index.php", {
-        module: "Home",
-        action: "getEditFieldHTML",
-        field: field,
-        current_module: module,
-        id: id,
-        view: view,
-        to_pdf: true
-    });
-    $.ajaxSetup({ async: true });
-    if (result.responseText) {
-        try {
-            return JSON.parse(result.responseText);
-        } catch (e) {
-            return false;
-        }
-    } else {
-        return false;
-    }
-}
-
-/**
  * Ajax call retrieve the field value from the bean used for closing the input.
  * Calls a controller action in /modules/Home/controller.
  * Returns the formatted output value of the field.
@@ -603,6 +577,7 @@ function loadFieldHTMLValue(field, id, module) {
  * @param id
  * @returns {*}
  */
+/*
 function getValidationRules(field, module, id) {
     $.ajaxSetup({ async: false });
     var result = $.getJSON("index.php", {
@@ -618,18 +593,78 @@ function getValidationRules(field, module, id) {
     try {
         var validation = JSON.parse(result.responseText);
     } catch (e) {
-        alert(
-            SUGAR.language.translate(
-                "app_strings",
-                "LBL_LOADING_ERROR_INLINE_EDITING"
-            )
-        );
+        alert(SUGAR.language.translate("app_strings", "LBL_LOADING_ERROR_INLINE_EDITING"));
         return false;
     }
 
     return (
         "<script type='text/javascript'>addToValidate('EditView', \"" + field + '", "' + validation["type"] + '", ' + validation["required"] + ',"' + validation["label"] + '");</script>'
     );
+}
+*/
+/**
+ * Ajax call to retrieve the html for a field.
+ * Calls a controller action in /modules/Home/controller.
+ * Returns the edit view field.
+ * @param field
+ * @param module
+ * @param id
+ * @param value
+ * @returns {*}
+ */
+/*
+function loadFieldHTML(field, module, id) {
+
+    $.ajaxSetup({ async: false });
+    var result = $.getJSON("index.php", {
+        module: "Home",
+        action: "getEditFieldHTML",
+        field: field,
+        current_module: module,
+        id: id,
+        view: view,
+        to_pdf: true
+    });
+    $.ajaxSetup({ async: true });
+    if (result.responseText) {
+        try {
+            return JSON.parse(result.responseText);
+        } catch (e) {
+            return false;
+        }
+    } else {
+        return false;
+    }
+}
+*/
+function getInlineEditFieldInfo(field, module, id, type) {
+    $.ajaxSetup({ async: false });
+    var result = $.getJSON("index.php", {
+        module: "Home",
+        action: "getInlineEditFieldInfo",
+        field: field,
+        current_module: module,
+        id: id,
+        view: view,
+        type: type,
+        to_pdf: true
+    });
+    $.ajaxSetup({ async: true });
+
+    var fieldInfo = [];
+    try {
+        var parsed = JSON.parse(result.responseText);
+        fieldInfo['validationRules'] = "<script type='text/javascript'>addToValidate('EditView', \"" + field + '", "'
+            + parsed.validationRules["type"] + '", ' + parsed.validationRules["required"] + ',"' + parsed.validationRules["label"] + '");</script>';
+        fieldInfo['editFieldHTML'] = parsed.editFieldHTML;
+        fieldInfo['relateFieldJS'] = parsed.relateFieldJS; // only filled for type= "relate" and "parent"
+    } catch (e) {
+        alert(SUGAR.language.translate("app_strings", "LBL_LOADING_ERROR_INLINE_EDITING"));
+        return false;
+    }
+
+
+    return fieldInfo;
 }
 
 /**
@@ -657,3 +692,5 @@ function getRelateFieldJS(field, module, id) {
 
     return result.responseText;
 }
+
+//@ sourceURL=include/InlineEditing/inlineEditing.js

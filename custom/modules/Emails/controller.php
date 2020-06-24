@@ -41,44 +41,56 @@ class CustomEmailsController extends EmailsController {
 
             $focusName = $request['parent_type'];
             $focus = BeanFactory::getBean($focusName, $request['parent_id']);  // TODO check module name exists
+            //if ($focus->module_dir == 'Accounts') {
+            //    $focusName = 'Accounts';
+            //}
 
-            $replacer = SuiteReplacer::getInstance()
-                ->addContext($focus)
-                ->addContext($campaign)
-                ->addContext(['to', $this->bean->to_addrs_arr])
-                ->addContext(['cc', $this->bean->cc_addrs_arr])
-                ->addContext(['bcc', $this->bean->bcc_addrs_arr]);
+            /**
+             * @var EmailTemplate $emailTemplate
+             */
+            //$emailTemplate = BeanFactory::getBean('EmailTemplates',
+            //    isset($request['emails_email_templates_idb']) ? $request['emails_email_templates_idb'] : null);
+
+            $replacer = new SuiteReplacer();
+            $context = array();
+            $context[] = [lcfirst($focus->object_name), $focus];
+            if (in_array(lcfirst($focus->object_name), ['contact', 'lead', 'target', 'user', ])) {
+                $context[] = ['person', $focus];
+            }
+            $context[]= ['to', $this->bean->to_addrs_arr];
+            $context[]= ['cc', $this->bean->cc_addrs_arr];
+            $context[]= ['bcc', $this->bean->bcc_addrs_arr];
 
             $parts  = ['description', 'name', 'description_html'];
             $error = null;
             foreach ($parts as $key) {
                 if (isset($GLOBALS['RAW_REQUEST'][$key])) {
                     $value = $GLOBALS['RAW_REQUEST'][$key];
+//                    $value = (strstr($key, 'html') !== false) ?  $replacer->undoCleanUp($value) : $value;
                     $value = (strstr($key, 'html') !== false) ?  htmlspecialchars_decode($value, ENT_QUOTES | ENT_HTML401) : $value;
                     try {
-                        $this->bean->$key = $replacer->replace($value, true);
+                        $this->bean->$key = $replacer->replace($value, $context);
                     }
                     catch (\Exception $twigException) {
                         $error = 'Twig Template error: ' . $twigException->getMessage();
-                        $errorValue = $value;
+                        $errorvalue = $value;
                     }
                 }
             }
-            $replacer->clearStatics();
 
             if (!is_null($error)) {
                 $GLOBALS['log']->error($error);
                 $split = explode(" ", $twigException->getMessage());
                 $line = intval($split[count($split)-1]);
-                $lineText = explode("\n", $errorValue)[$line-1];
+                $lineText = explode("\n",$errorvalue)[$line-1];
                 $this->view = 'ajax';
                 $response['errors'] = [
-                    'type'   => get_class($this->bean),
-                    'id'     => $this->bean->id,
-                    'error'  => $error,
-                    'title'  => $error . ": <br/><br/><textarea readonly type=text style='width:100%'>$lineText</textarea><br/><br/>Mail not sent.",
+                    'type' => get_class($this->bean),
+                    'id' => $this->bean->id,
+                    'error' => $error,
+                    'title' => $error . ": <br/><br/><textarea readonly type=text style='width:100%'>$lineText</textarea><br/><br/>Mail not sent.",
                     'lineno' => $line,
-                    'line'   => $lineText
+                    'line' => $lineText
                 ];
                 echo json_encode($response);
                 return;

@@ -24,11 +24,11 @@ function smarty_function_suite_check_access($params, &$smarty)
         return;
     }
     if (empty($params['record'])) {
-        $smarty->trigger_error("sugar_check_access: missing 'record' parameter");
+        //$smarty->trigger_error("sugar_check_access: missing 'record' parameter");
         return;
     }
     if (empty($params['action'])) {
-        $smarty->trigger_error("sugar_check_access: missing 'module' parameter");
+        $smarty->trigger_error("sugar_check_access: missing 'action' parameter");
         return;
     }
     $ret = false;

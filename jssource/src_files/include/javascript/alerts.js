@@ -282,7 +282,7 @@ Alerts.prototype.markAsRead = function (id) {
 /**
  * Runs timer to update alerts
  */
-$(document).ready(function () {
+$(document).ready(function () { return;
   Alerts.prototype.replaceMessages = [
     {search: SUGAR.language.translate("app", "MSG_JS_ALERT_MTG_REMINDER_CALL_MSG"), replace: ""},
     {search: SUGAR.language.translate("app", "MSG_JS_ALERT_MTG_REMINDER_MEETING_MSG"), replace: ""}

@@ -2416,7 +2416,7 @@ sugarListView.prototype.check_entire_list = function (form, field, value, list_c
   for (i = 0; i < form.elements.length; i++) {
     if (form.elements[i].name == field && form.elements[i].disabled == false) {
       if (form.elements[i].checked != value) count++;
-      form.elements[i].checked = value;
+      form.elements[i].click(); // = value;
       form.elements[i].disabled = true;
     }
   }

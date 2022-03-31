@@ -68,6 +68,8 @@ class TemplateField
     public $ext2 = '';
     public $ext3 = '';
     public $ext4 = '';
+    public $auto_new = '';
+    public $auto_edit = '';
     public $audited= 0;
     public $inline_edit = 1;
     public $massupdate = 0;
@@ -104,8 +106,10 @@ class TemplateField
         'merge_filter'=>'merge_filter',
         'reportable' => 'reportable',
         'ext2'=>'ext2',
-        'ext4'=>'ext4',
         'ext3'=>'ext3',
+        'ext4'=>'ext4',
+        'auto_new' => 'auto_new',
+        'auto_edit' => 'auto_edit',
         'labelValue' => 'label_value',
         'unified_search'=>'unified_search',
         'full_text_search'=>'full_text_search',
@@ -366,6 +370,8 @@ class TemplateField
             'no_default'=> !empty($this->no_default),
             'comments'=> (isset($this->comments)) ? $this->comments : '',
             'help'=> (isset($this->help)) ?  $this->help : '',
+            'auto_new'=> (isset($this->auto_new)) ?  $this->auto_new : '',
+            'auto_edit'=> (isset($this->auto_edit)) ?  $this->auto_edit : '',
             'importable'=>$this->importable,
             'duplicate_merge'=>$this->duplicate_merge,
             'duplicate_merge_dom_value'=> $this->getDupMergeDomValue(),

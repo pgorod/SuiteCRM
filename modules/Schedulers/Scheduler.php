@@ -551,15 +551,15 @@ class Scheduler extends SugarBean
             case 0: // minutes
                 if ($value == '0') {
                     //return;
-                    return trim($mod_strings['LBL_ON_THE']) . $mod_strings['LBL_HOUR_SING'];
+                    return trim($mod_strings['LBL_ON_THE']) . ' '. $mod_strings['LBL_HOUR_SING'];
                 } elseif (!preg_match('/[^0-9]/', $hours) && !preg_match('/[^0-9]/', $value)) {
                     return;
                 } elseif (preg_match('/\*\//', $value)) {
                     $value = str_replace('*/', '', $value);
 
-                    return $value . $mod_strings['LBL_MINUTES'];
+                    return $value . ' '. $mod_strings['LBL_MINUTES'];
                 } elseif (!preg_match('[^0-9]', $value)) {
-                    return $mod_strings['LBL_ON_THE'] . $value . $mod_strings['LBL_MIN_MARK'];
+                    return $mod_strings['LBL_ON_THE'] . ' '. $value . $mod_strings['LBL_MIN_MARK'];
                 }
 
                 return $value;
@@ -569,7 +569,7 @@ class Scheduler extends SugarBean
                 if (preg_match('/\*\//', $value)) { // every [SOME INTERVAL] hours
                     $value = str_replace('*/', '', $value);
 
-                    return $value . $mod_strings['LBL_HOUR'];
+                    return $value .' '. $mod_strings['LBL_HOUR'];
                 } elseif (preg_match(
                     '/[^0-9]/',
                     $mins
@@ -634,19 +634,19 @@ class Scheduler extends SugarBean
                     }
                 } elseif (false !== strpos($interval, '-')) {
                     $exRange = explode('-', $interval);
-                    $tempInt .= $mod_strings['LBL_FROM'];
+                    $tempInt .= $mod_strings['LBL_FROM'] . ' ';
                     $check = $tempInt;
 
                     foreach ($exRange as $val) {
                         if ($tempInt == $check) {
                             $tempInt .= $this->handleIntervalType($key, $val, $ints['raw'][0], $ints['raw'][1]);
-                            $tempInt .= $mod_strings['LBL_RANGE'];
+                            $tempInt .= ' ' . $mod_strings['LBL_RANGE']. ' ';
                         } else {
                             $tempInt .= $this->handleIntervalType($key, $val, $ints['raw'][0], $ints['raw'][1]);
                         }
                     }
                 } elseif (false !== strpos($interval, '*/')) {
-                    $tempInt .= $mod_strings['LBL_EVERY'];
+                    $tempInt .= $mod_strings['LBL_EVERY'] . ' ';
                     $tempInt .= $this->handleIntervalType($key, $interval, $ints['raw'][0], $ints['raw'][1]);
                 } else {
                     $tempInt .= $this->handleIntervalType($key, $interval, $ints['raw'][0], $ints['raw'][1]);

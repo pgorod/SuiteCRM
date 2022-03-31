@@ -289,7 +289,7 @@ function runMassEmailCampaign()
         require('modules/ACL/ACLController.php');
     }
 
-    require('modules/EmailMan/EmailManDelivery.php');
+    require(get_custom_file_if_exists('modules/EmailMan/EmailManDelivery.php'));
     return true;
 }
 

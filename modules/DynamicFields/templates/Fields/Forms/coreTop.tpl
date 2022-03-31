@@ -92,7 +92,15 @@
 	<td class='mbLBL'>{sugar_translate module="DynamicFields" label="COLUMN_TITLE_HELP_TEXT"}:</td><td>{if $hideLevel < 5 }<input type="text" name="help" value="{$vardef.help}">{else}<input type="hidden" name="help" value="{$vardef.help}">{$vardef.help}{/if}
 	</td>
 </tr>
+	<tr>
+		<td class='mbLBL'>{sugar_translate module="DynamicFields" label="COLUMN_TITLE_COMMENT_TEXT"}:</td><td>{if $hideLevel < 5 }<input type="text" name="comments" value="{$vardef.comments}">{else}<input type="hidden" name="comment" value="{$vardef.comment}">{$vardef.comment}{/if}
+		</td>
+	</tr>
 <tr>
-    <td class='mbLBL'>{sugar_translate module="DynamicFields" label="COLUMN_TITLE_COMMENT_TEXT"}:</td><td>{if $hideLevel < 5 }<input type="text" name="comments" value="{$vardef.comments}">{else}<input type="hidden" name="comment" value="{$vardef.comment}">{$vardef.comment}{/if}
-    </td>
+	<td class='mbLBL'>Auto New:</td><td>{if $hideLevel < 5 }<textarea aaa type="text" name="auto_new">{else}<textarea bbb type="hidden" name="auto_new" >{/if}{$vardef.auto_new|escape}</textarea>
+	</td>
+</tr>
+<tr>
+	<td class='mbLBL'>Auto Edit:</td><td>{if $hideLevel < 5 }<textarea aaa type="text" name="auto_edit" >{else}<textarea bbb type="hidden" name="auto_edit" >{/if}{$vardef.auto_edit|escape}</textarea>
+	</td>
 </tr>

@@ -619,6 +619,8 @@ class DynamicField
         $fmd->ext2 = $field->ext2;
         $fmd->ext3 = $field->ext3;
         $fmd->ext4 = (isset($field->ext4) ? $field->ext4 : '');
+        $fmd->auto_new = $field->auto_new;
+        $fmd->auto_edit = $field->auto_edit;
         $fmd->comments = $field->comment;
         $fmd->massupdate = $field->massupdate;
         $fmd->importable = (isset($field->importable)) ? $field->importable : null;

@@ -1,6 +1,10 @@
 <?php
 
 
+use SuiteCRM\PDF\PDFWrapper;
+use Twig\TwigFilter;
+use Twig\TwigFunction;
+
 class SuiteReplacer {
     /**
      * Official expression for variables, extended with underscore
@@ -13,43 +17,49 @@ class SuiteReplacer {
     private $twig;
     private $assignments;
     public $files2Attach = [];
+    public $pickedObjects = [];
 
     public function __construct() {
 
     }
 
     private function buildSandboxPolicy() {
-        $tags = ['if', 'for', 'apply', 'set'];
-        $filters = ['upper', 'escape', 'date', 'date_modify', 'first', 'last', 'join', 'map', 'raw',
-                    'inline_css', 'nl2br', 'spaceless', 'number_format', 'format_currency'];
-        // custom, defined by us:
-        $filters[] = 'related';
-        $filters[] = 'photo';
-        $filters[] = 'render';
-        $filters[] = 'topdf';
-        $filters[] = 'attach';
+        $tags = ['if', 'for', 'apply', 'set', 'do'];
+
+        $filters = [
+            // default Twig filters:
+            'upper', 'escape', 'date', 'date_modify', 'first', 'last', 'join', 'map', 'filter', 'reduce', 'raw', 'trim',
+            'inline_css', 'nl2br', 'spaceless', 'number_format', 'format_currency',
+            // custom, defined by us:
+            'related', 'photo', 'render', 'topdf', 'attach'];
+
         $methods = [
             'contact' => ['getTitle', 'getBody'],
+            'SugarPHPMailer' => ['AddAddress', 'AddCC', 'AddBCC'],
         ];
+
         $properties = [
             'contact' => ['id', 'name', 'assigned_user_id', 'emailAddress', 'date_modified', 'sex_c', 'salutation',
                 'email1', 'phone_mobile', 'first_name', 'last_name'],
             'lead' => ['name', 'assigned_user_id', 'emailAddress', 'date_modified', 'sex_c', 'salutation', 'email1'],
             'aos_products' => ['name', 'price', 'photo'],
             'SugarEmailAddress' => ['addresses'],
+            'note' => ['name'],
             'account' => ['name'],
             'user' => ['name', 'phone_work', 'phone_mobile'],
             'AOS_Quotes' => ['name', 'total_amt', 'date_modified'],
             'AOS_PDF_Templates' => ['name', 'description', 'date_modified'],
         ];
-        $functions = ['range', 'source', 'include', 'date'];
-        // add custom functions, defined by us:
-        $functions[] = 'owner';
-        $functions[] = 'bean';
-        $functions[] = 'attach';
-        $functions[] = 'recent';
+
+        $functions = [
+            // default Twig functions:
+            'range', 'source', 'include', 'date',
+            // custom functions, defined by us:
+            'owner', 'bean', 'attach', 'recent', 'cancel'];
+
         return new \Twig\Sandbox\SecurityPolicy($tags, $filters, $methods, $properties, $functions);
     }
+
 
     // Converts old-school dollar variables into twig tags
     public function twigifyOldVars($dollarVarString) {
@@ -108,31 +118,25 @@ class SuiteReplacer {
         $this->twig->addExtension(new Twig\Extra\Intl\IntlExtension());
 
         // add custom Twig filters and functions from class static methods
-        $filter = new \Twig\TwigFilter('related', [$this, 'related']);
-        $this->twig->addFilter($filter);
-        $filter = new \Twig\TwigFilter('photo', [$this, 'photo'], array('is_safe' => array('html')));
-        $this->twig->addFilter($filter);
-        $filter = new \Twig\TwigFilter('render', [$this, 'render']);
-        $this->twig->addFilter($filter);
-        $filter = new \Twig\TwigFilter('topdf', [$this, 'topdf']);
-        $this->twig->addFilter($filter);
-        $filter = new \Twig\TwigFilter('attach', [$this, 'attachFilter']);
-        $this->twig->addFilter($filter);
+        $this->twig->addFilter(new TwigFilter('related', [$this, 'related']));
+        $this->twig->addFilter(new TwigFilter('photo',   [$this, 'photo'], array('is_safe' => array('html'))));
+        $this->twig->addFilter(new TwigFilter('render',  [$this, 'render']));
+        $this->twig->addFilter(new TwigFilter('topdf',   [$this, 'topdf']));
+        $this->twig->addFilter(new TwigFilter('attach',  [$this, 'attachFilter']));
 
-        $function = new \Twig\TwigFunction('owner', [$this, 'owner']);
-        $this->twig->addFunction($function);
-        $function = new \Twig\TwigFunction('bean', [$this, 'bean']);
-        $this->twig->addFunction($function);
-        $function = new \Twig\TwigFunction('attach', [$this, 'attachFunction']);
-        $this->twig->addFunction($function);
-        $function = new \Twig\TwigFunction('recent', [$this, 'recent']);
-        $this->twig->addFunction($function);
+        $this->twig->addFunction(new TwigFunction('owner',  [$this, 'owner']));
+        $this->twig->addFunction(new TwigFunction('bean',   [$this, 'bean']));
+        $this->twig->addFunction(new TwigFunction('attach', [$this, 'attachFilter']));
+        $this->twig->addFunction(new TwigFunction('recent', [$this, 'recent']));
+        $this->twig->addFunction(new TwigFunction('cancel', [$this, 'cancel']));
     }
 
     // this is a new Twig extension filter our users can use in their templates
     public static function related($focus, $relatedModule) {
         // Security reminder: treat parameters as untrusted user-provided content:
         $relatedModule = strtolower(htmlspecialchars($relatedModule));
+        // decided against allowing a whereClause for get_linked_beans, because quoting breaks the query, and not quoting is crazy-insecure...
+        // $whereClause = DBManagerFactory::getInstance()->quote($changed) ?: '';
 
         if (!($focus instanceof SugarBean)) {
             throw new Twig\Error\Error('Missing context for related record of type "' . $relatedModule . '"');
@@ -171,11 +175,11 @@ class SuiteReplacer {
             }
             // tries each variation until one works:
             foreach ($variations as $varkey=>$variation) {
-                $linkedBeans = $focus->get_linked_beans($variation);
+                $linkedBeans = $focus->get_linked_beans($variation); // , '', '', 0, -1, 0, $whereClause);
                 if ($varkey >= 1) {
                     // traverse relationship tables in one simplified step (e.g. quotes > products_quotes > products)
                     foreach ($linkedBeans as $key=>$linked) {
-                        $linkedLinkedBeans = $linked->get_linked_beans($variations[$varkey - 1]);
+                        $linkedLinkedBeans = $linked->get_linked_beans($variations[$varkey - 1]); // , '', '', 0, -1, 0, $whereClause);
                         if (count($linkedLinkedBeans) === 1) {
                             $linkedBeans[$key] = $linkedLinkedBeans[0];
                         }
@@ -244,7 +248,6 @@ class SuiteReplacer {
 
             $site = $sugar_config['site_url'];
             $site = rtrim($site, '/') . '/';
-$site = 'http://voipalameda.no-ip.org:201/';
 
             //$ret = $site . 'index.php?entryPoint=emailImage&id=' . $focus->id . '_photo';
             $ret = '<img src="' . $site . $savedFile . '" alt="{ image }" width="' . $width . '">';
@@ -323,6 +326,7 @@ SQL;
         return $bean;
     }
 
+    // CAN BE DELETED, THE FILTER VERSION IS ENOUGH
     // this is a new Twig extension function our users can use in their templates
     public function attachFunction($fileName, $displayName = '') {
         // Security reminder: treat parameters as untrusted user-provided content:
@@ -340,18 +344,35 @@ SQL;
     }
 
     // this is a new Twig extension filter our users can use in their templates
-    public function attachFilter($fileName, $displayName = '') {
-        // Security reminder: treat parameters as untrusted user-provided content:
-        $fileName = str_replace('..', '.', $fileName);
+    public function attachFilter($fileNamesOrNoteObjects, $displayName = '') {
+        // Security reminder: treat parameters as untrusted user-provided content
 
-        if (!file_exists($fileName)) {
-            throw new Twig\Error\Error('attachFilter: Error attaching file to email "' . $fileName . '.');
+        // we can handle both individual items, or arrays of items, so if needed, create an array of one:
+        if (!is_array($fileNamesOrNoteObjects)) {
+            $fileNamesOrNoteObjects = Array($fileNamesOrNoteObjects);
         }
-        $url = $fileName;
+        foreach ($fileNamesOrNoteObjects as $fileNameOrNoteObj) {
+            // are we attaching a full Note objects or a simple string filename?
+            if ($fileNameOrNoteObj instanceof Note) {
 
-        // avoid repeats which are common due to evaluating both description and description_html:
-        if (!in_array($fileName, array_column($this->files2Attach, 0))) {
-            $this->files2Attach[] = [$fileName, $displayName, $url];
+                // avoid repeats which are common due to evaluating both description and description_html:
+                if (!in_array($fileNameOrNoteObj, array_column($this->pickedObjects, 1))) {
+                    // pass the object itself to the outside calling function, in this case it's probably sendEmail from within a Workflow action
+                    $this->pickedObjects[] = ['Note', $fileNameOrNoteObj->id, $fileNameOrNoteObj];
+                }
+            } else {
+                $fileNameOrNoteObj = str_replace('..', '.', $fileNameOrNoteObj);
+
+                if (!file_exists($fileNameOrNoteObj)) {
+                    throw new Twig\Error\Error('attachFilter: Error attaching file to email "' . $fileNameOrNoteObj . '.');
+                }
+                $url = $fileNameOrNoteObj;
+
+                // avoid repeats which are common due to evaluating both description and description_html:
+                if (!in_array($fileNameOrNoteObj, array_column($this->files2Attach, 0))) {
+                    $this->files2Attach[] = [$fileNameOrNoteObj, $displayName, $url];
+                }
+            }
         }
     }
 
@@ -367,28 +388,43 @@ SQL;
     }
 
     // this is a new Twig extension filter our users can use in their templates
-    public function topdf($html, $fileName = '')
+    public function topdf($template, $fileName = '')
     {
         global $sugar_config;
         // Security reminder: treat parameters as untrusted user-provided content:
-        // TODO: prevent risky extensions, prevent ".." and other directory tricks
+        // simple yet safe: replace every sequence of NOT "a-zA-Z0-9_-" with a dash; add an extension yourself.
+        $fileName = preg_replace('/[^a-zA-Z0-9_-]+/', '-', strtolower($fileName)).'.pdf';
+
         try {
-            require_once('modules/AOS_PDF_Templates/PDF_Lib/mpdf.php');
+            $pdf = PDFWrapper::getPDFEngine();
+            //$pdf->addCSS(file_get_contents('custom/pgr/PowerReplacer/custom_styles.css');
 
-            $pdf_single = new mPDF('en'); //, $format, '', '', $template->margin_left, $template->margin_right,
-                //$template->margin_top, $template->margin_bottom, $template->margin_header, $template->margin_footer);
-            $fp = fopen($sugar_config['upload_dir'] . 'nfile.pdf', 'wb');
-            fclose($fp);
+            if ($template instanceof AOS_PDF_Templates) {
+                $pdf->configurePDF([
+                    'mode' => 'en',
+                    'page_size' => $template->page_size,
+                    'font' => 'DejaVuSansCondensed',
+                    'margin_left' => $template->margin_left,
+                    'margin_right' => $template->margin_right,
+                    'margin_top' => $template->margin_top,
+                    'margin_bottom' => $template->margin_bottom,
+                    'margin_header' => $template->margin_header,
+                    'margin_footer' => $template->margin_footer,
+                    'orientation' => $template->orientation
+                ]);
+                $pdf->writeHeader($template->pdfheader);
+                $pdf->writeFooter($template->pdffooter);
+                $pdf->writeHTML($this->render($template->description));
+            } else {
+                $pdf->writeHTML($template);
+                //$pdf->
+            }
 
-            $pdf_single->SetAutoFont();
-            //$pdf_single->SetHTMLHeader($header);
-            //$pdf_single->SetHTMLFooter($footer);
-            $pdf_single->WriteHTML($html);
             if ($fileName === '') {
                 $fileName = $sugar_config['upload_dir'] . 'topdf.pdf';
             }
-            $pdf_single->Output($fileName, 'F');
-        } catch (mPDF_exception $e) {
+            $pdf->outputPDF($fileName, 'F');
+        } catch (Exception $e) {
             echo $e;
         }
         return $fileName;
@@ -415,6 +451,14 @@ SQL;
         return $ret;
     }
 
+    // this is a new Twig extension function our users can use in their templates
+    public function cancel($msg = '', $condition = true) {
+        // Security reminder: treat parameters as untrusted user-provided content: although for logging we will opt for no sanitizing here.
+        if ($condition) {
+            throw new Twig\Error\Error("Process cancelled with msg: $msg");
+        }
+    }
+
     // Make sure to keep this as a fast check - it will get called once for every field in every bean save
     // Avoid regexps if possible...
     public static function shouldTriggerReplace($value1, $value2 = null, $value3 = null) {
@@ -430,7 +474,6 @@ SQL;
         }
         $context[] = [ 'field' => $field];
         $context[] = [ 'module', $bean->object_name ];
-        $context[] = Array($bean); // directly-accessible individual fields
         if (isset($bean->fetched_row) and is_array($bean->fetched_row)) {
             $context[] = ['was', $bean->fetched_row[$field]];
             $context[] = ['were', $bean->fetched_row];
@@ -442,6 +485,7 @@ SQL;
                 $context[] = [ 'assigned_user_name', $_POST['assigned_user_name']];
             }
         }
+        //array_merge($context, $bean); // Untested. directly-accessible individual fields; first item in context already gets that, it's done in replace().
 
         return $context;
     }
@@ -480,33 +524,14 @@ SQL;
         $original = $this->twigifyOldVars($original);
         $this->assignments = [];
 
-        /*
-        $varsFound = [];
-        preg_match_all(self::TWIG_VAR_PATTERN, $original, $varsFound); // , PREG_OFFSET_CAPTURE);
-        $varsFound = $varsFound[1]; // keep only what we need, the bare variable names
-        foreach ($varsFound as $varToAssign) {
-            if ($varToAssign === '') continue;
-
-            $modulePrefix = $context[0][1]->object_name;
-            if ($modulePrefix === 'User') {
-                $modulePrefix = 'contact_user_';
-            } else {
-                $modulePrefix = strtolower($modulePrefix) . '_';
-            }
-
-            $fieldName = strtok(str_replace($modulePrefix, '', $varToAssign), '|');
-            if (property_exists($context[0][1], $fieldName)) {
-                $assignments[strtok($varToAssign, '|')] = $context[0][1]->$fieldName;
-            }
-        }
-        */
-        // TODO check if buildRichContextFromBean function doesn't dispense this
         foreach ($context as $item) {
+            // Copy context into assignments array, as is:
             if (isset($item[1])) {
                 $this->assignments[$item[0]] = $item[1];
             } elseif (isset($item[0]) && (is_array($item[0]) || is_object($item[0]))) {
+                // Copy first object into assignments array, adding each member separately for direct access
                 foreach ($item[0] as $key=>$value) {
-                    $this->assignments[$key] = $value; // add each member separately into the $assignments array
+                    $this->assignments[$key] = $value;
                 }
             }
         }

@@ -6,7 +6,7 @@ if (!defined('sugarEntry') || !sugarEntry) {
 
 require_once 'modules/EmailMan/EmailMan.php';
 require_once 'custom/pgr/SuiteReplacer.php';
-require_once('modules/AOS_PDF_Templates/PDF_Lib/mpdf.php');
+//require_once('modules/AOS_PDF_Templates/PDF_Lib/mpdf.php');
 
 class CustomEmailMan extends EmailMan {
     protected $previewFileStarted = false;
@@ -472,7 +472,7 @@ class CustomEmailMan extends EmailMan {
 
     // THE FUNCTION BELOW IS 100% LIKE THE PARENT VERSION, it's just here because they made it "private"
     // instead of "protected". See https://github.com/salesagility/SuiteCRM/pull/8841
-    private function shouldBlockEmail(SugarBean $bean)
+  /*  private function shouldBlockEmail(SugarBean $bean)
     {
         global $sugar_config;
 
@@ -530,5 +530,5 @@ class CustomEmailMan extends EmailMan {
 
         return false;
     }
-
+*/
 }

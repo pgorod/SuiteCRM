@@ -287,6 +287,11 @@ class SugarLogger implements LoggerTemplate
         $eol = $eol ? PHP_EOL : '';
         $dumpArgs = '';
 
+        // this 'define' is copied from entryPoint.php, in case this code runs before that:
+        if (!defined('SUGAR_PATH')) {
+            define('SUGAR_PATH', realpath(dirname(__FILE__).'/..'));
+        }
+
         $frames = $exception->getTrace();
         foreach ($frames as $frame) {
             if ((isset($frame['class']) && ($frame['class'] === 'SugarLogger')) ||

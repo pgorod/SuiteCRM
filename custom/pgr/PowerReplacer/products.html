@@ -1,0 +1,23 @@
+{%- apply inline_css(source("custom_css")) -%}
+<table>
+    <thead>
+    <tr>
+        <th>Name</th><th>Image</th><th>Value</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in quote|related('aos_products') %}
+    <tr>
+        <td>{{ item.name|raw }}</td>
+        <td>{{ item|photo }}</td>
+        <td class="price">{{ item.price|format_currency('EUR') }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+        <td><b>Total (EUR):</b></td>
+        <td></td>
+        <td class="price"><b>{{ quote.total_amt|format_currency('EUR') }}</b></td>
+    </tr>
+    </tbody>
+</table>
+{%- endapply -%}

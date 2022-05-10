@@ -1,0 +1,12 @@
+{%- apply inline_css(source("custom_css")) -%}
+<p></p>
+<table>
+    <tbody>
+    <tr>
+        <td>{{ assigned|photo }}</td>
+        <td><b>{{ assigned.name }}</b> is standing by to assist you with this purchase.<br/>Questions? Please dial {{ assigned.phone_work }} (Office), {{ assigned.phone_mobile }} (Mobile) or simply reply to this email.</td>
+        <td><img src="http://voipalameda.no-ip.org:201/public/emailImages/hopeShoes.png" width=80></td>
+    </tr>
+    </tbody>
+</table>
+{%- endapply -%}

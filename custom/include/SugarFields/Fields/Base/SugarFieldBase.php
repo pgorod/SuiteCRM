@@ -12,12 +12,17 @@ class CustomSugarFieldBase extends SugarFieldBase {
         parent::save($bean, $params, $field, $properties, $prefix);
 
         require_once 'custom/pgr/SuiteReplacer.php';
-        if (!empty($bean->$field) && is_string($bean->$field)) {
-            $bean->$field = SuiteReplacer::getInstance()
-                ->addCondition('shouldTriggerReplace', $bean->$field)
-                ->addContext($bean, $field)
-                ->addContext([ 'typed', $params ])
-                ->replace(SuiteReplacer::undoCleanUp($bean->$field));
+        $autoAction = $bean->fetched_row ? 'auto_edit' : 'auto_new';
+        if (isset($bean->field_defs[$field][$autoAction])) {
+            $source = '{% set currentEdit = "' . $bean->$field . '" %}'.
+                $bean->field_defs[$field][$autoAction];
+        }
+        elseif (SuiteReplacer::shouldTriggerReplace($bean->$field)) {
+            $source = $bean->$field;
+        }
+        if (isset($source)) {
+            $bean->$field = SuiteReplacer::quickReplace($source,
+                SuiteReplacer:: buildRichContextFromBean($bean, $field), true);
         }
     }
 

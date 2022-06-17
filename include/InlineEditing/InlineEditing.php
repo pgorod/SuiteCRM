@@ -406,6 +406,8 @@ function saveField($field, $id, $module, $value)
             } else {
                 $bean->$field = $value;
             }
+        } elseif ($bean->field_defs[$field]['type'] == 'bool') {
+            $bean->$field = ($_REQUEST['value'] == 'on');
         } elseif ($module === 'Leads' && $field === 'account_name') {
             require_once('modules/Leads/LeadFormBase.php');
             $bean->$field = $value;

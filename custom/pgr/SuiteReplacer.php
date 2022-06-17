@@ -418,7 +418,7 @@ SQL;
     // Make sure to keep this as a fast check - it will get called once for every field in every bean save
     // Avoid regexps if possible...
     public static function shouldTriggerReplace($value1, $value2 = null, $value3 = null) {
-        return (substr($value1, 0, 2) === '{{');
+        return (is_string($value1) ? substr($value1, 0, 2) === '{{' : false);
     }
 
     public static function buildRichContextFromBean($bean, $field = null, $module = null) {
@@ -432,8 +432,10 @@ SQL;
         $context[] = [ 'module', $bean->object_name ];
         $context[] = Array($bean); // directly-accessible individual fields
         if (isset($bean->fetched_row) and is_array($bean->fetched_row)) {
-            $context[] = ['was', $bean->fetched_row[$field]];
-            $context[] = ['were', $bean->fetched_row];
+            $context[] = ['was', $bean->fetched_row[$field]];  // quick shortcut into the current field, as it was in the DB
+            $context[] = ['were', $bean->fetched_row];         // full access to the bean as it was in the DB
+            // see also currentEdit variable which is set both in inline and regular Edits,
+            // containing what was typed in the field, to allow for "find-and-replace"-type templates
         } else {
             if (!isset($bean->assigned_user_id)) {
                 $context[] = [ 'assigned_user_id', $_POST['assigned_user_id']];

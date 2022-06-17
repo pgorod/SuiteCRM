@@ -4,9 +4,9 @@ if (!defined('sugarEntry') || !sugarEntry) {
     die('Not A Valid Entry Point');
 }
 
-require_once 'include/SugarFields/Fields/Base/SugarFieldBase.php';
+require_once 'include/SugarFields/Fields/Text/SugarFieldText.php';
 
-class CustomSugarFieldBase extends SugarFieldBase {
+class CustomSugarFieldText extends SugarFieldText {
 
     public function save(&$bean, $params, $field, $properties, $prefix = '') {
         parent::save($bean, $params, $field, $properties, $prefix);
@@ -25,5 +25,9 @@ class CustomSugarFieldBase extends SugarFieldBase {
                 SuiteReplacer:: buildRichContextFromBean($bean, $field), true);
         }
     }
-
 }
+
+
+
+
+

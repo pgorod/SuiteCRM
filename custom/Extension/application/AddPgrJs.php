@@ -14,8 +14,11 @@ class PgrAfterUIHook
         if (isset($GLOBALS["app"]) && $GLOBALS["app"]->controller->view === 'ajax') {
             return;
         }
+        if (isset($_REQUEST['sugar_body_only']) && $_REQUEST['sugar_body_only']) { // anything truthy matches
+            return;
+        }
         if (isset($_REQUEST['module'])) {
-            $excludedModules = ['Home', 'Favorites', 'Administration', 'Reminders', 'ModuleBuilder', 'EmailMan'];
+            $excludedModules = ['Home', 'Favorites', 'Administration', 'Reminders', 'ModuleBuilder', 'EmailMan', 'Emails'];
             if (in_array($_REQUEST['module'], $excludedModules)) {
                 return;
             }

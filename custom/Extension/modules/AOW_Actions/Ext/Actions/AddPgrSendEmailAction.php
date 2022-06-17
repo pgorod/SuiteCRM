@@ -7,7 +7,8 @@ $aow_actions_list[] = 'SendPowerReplacerEmail';
 // into
 // custom/modules/AOW_Actions/Ext/Actions/actions.ext.php
 //
-// And a label called LBL_SENDPOWERREPLACEREMAIL will need to be defined;
+// And a label called LBL_SENDPOWERREPLACEREMAIL will need to be defined
+// in custom/Extension/modules/AOW_Actions/Ext/Language/en_us.lang.php
 //
 // And a PHP file called
 // custom/modules/AOW_Actions/actions/actionSendPowerReplacerEmail.php

@@ -10,7 +10,7 @@ function customSaveField($field, $id, $module, $value)
 
     require_once 'custom/pgr/SuiteReplacer.php';
 
-    if (isset($bean->field_defs[$field]['auto_edit'])) {
+    if (!empty($bean->field_defs[$field]['auto_edit'])) {
         $source = '{% set currentEdit = "' . $value . '" %}'.
                  $bean->field_defs[$field]['auto_edit'];
     }

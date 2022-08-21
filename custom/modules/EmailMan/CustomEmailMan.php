@@ -288,49 +288,33 @@ class CustomEmailMan extends EmailMan {
             }
 
 
+            $replacer = SuiteReplacer::getInstance()
+                ->addContext($focus)
+                ->addContext(['site_url',        $sugar_config['site_url']])
+                ->addContext(['tracker_url',     $this->tracker_urls])
+                ->addContext(['campaign',        $this->current_campaign])
+                ->addContext(['email_marketing', $this->current_emailmarketing])
+                ->addContext(['replyToAddr',     $replyToAddr])
+                ->addContext(['replyToName',     $replyToName]);
 
-            $replacer = new SuiteReplacer();
-            $context = Array();
-            $context[]= [lcfirst($focus->object_name), $focus];
-            if (in_array(lcfirst($focus->object_name), ['contact', 'lead', 'target', 'user', ])) {
-                $context[] = ['person', $focus];
+            try {
+                $template_data['subject']   = $replacer->replace($this->current_emailtemplate->subject, true);
+                $template_data['body']      = $replacer->replace($this->current_emailtemplate->body, true);
+                $template_data['body_html'] = $replacer->replace(htmlspecialchars_decode($this->current_emailtemplate->body_html, ENT_QUOTES | ENT_HTML401));
+
             }
-            $context[]= ['site_url',        $sugar_config['site_url']];
-            $context[]= ['tracker_url',     $this->tracker_urls];
-            $context[]= ['campaign',        $this->current_campaign];
-            $context[]= ['email_marketing', $this->current_emailmarketing];
-            $context[]= ['replyToAddr',     $replyToAddr];
-            $context[]= ['replyToName',     $replyToName];
-
-
-            $parts  = ['body', 'subject', 'body_html'];
-            $error = null;
-            foreach ($parts as $key) {
-                $value = $this->current_emailtemplate->$key;
-//                    $value = (strstr($key, 'html') !== false) ?  $replacer->undoCleanUp($value) : $value;
-                $value = (strstr($key, 'html') !== false) ?  htmlspecialchars_decode($value, ENT_QUOTES | ENT_HTML401) : $value;
-                try {
-                    $template_data[$key] = $replacer->replace($value, $context);
-                }
-                catch (\Exception $twigException) {
-                    $template_data['error'] = 'Twig Template error: ' . $twigException->getMessage();
-                    //$errorvalue = $value;
-                }
+            catch (\Exception $twigException) {
+                $template_data['error'] = 'Twig Template error: ' . $twigException->getMessage();
             }
 
             //parse and replace bean variables.
             $macro_nv = array();
 
             //require_once __DIR__ . '/../EmailTemplates/EmailTemplateParser.php';
-            require_once 'modules/EmailTemplates/EmailTemplateParser.php';
+            //require_once 'modules/EmailTemplates/EmailTemplateParser.php';
 
-            $NOTtemplate_data = (new EmailTemplateParser(
-                $this->current_emailtemplate,
-                $this->current_campaign,
-                $focus,
-                $sugar_config['site_url'],
-                $this->getTargetId()
-            ))->parseVariables();
+            //$template_data = (new EmailTemplateParser($this->current_emailtemplate, $this->current_campaign,
+            //    $focus, $sugar_config['site_url'], $this->getTargetId()))->parseVariables();
 
             //add email address to this list.
             $macro_nv['sugar_to_email_address'] = $focus->email1;
@@ -365,33 +349,13 @@ class CustomEmailMan extends EmailMan {
                 $mail->Body = $template_data['body'];
             } else {
                 $mail->Body = wordwrap($template_data['body_html'], 900);
-                //BEGIN:this code will trigger for only campaigns pending before upgrade to 4.2.0.
-                //will be removed for the next release.
-                if (!isset($btracker)) {
-                    $btracker = false;
-                }
-                if ($btracker) {
-                    $mail->Body .= "<br /><br /><a href='" . $tracker_url . "'>" . $tracker_text . "</a><br /><br />";
-                } else {
-                    if (!empty($tracker_url)) {
-                        $mail->Body = str_replace('TRACKER_URL_START', "<a href='" . $tracker_url . "'>", $mail->Body);
-                        $mail->Body = str_replace('TRACKER_URL_END', "</a>", $mail->Body);
-                        $mail->AltBody = str_replace('TRACKER_URL_START', "<a href='" . $tracker_url . "'>", $mail->AltBody);
-                        $mail->AltBody = str_replace('TRACKER_URL_END', "</a>", $mail->AltBody);
-                    }
-                }
-                //END
                 //do not add the default remove me link if the campaign has a tracker url of the opt-out link
                 if ($this->has_optout_links == false) {
                     $mail->Body .= "<br /><span style='font-size:0.8em'>{$mod_strings['TXT_REMOVE_ME']} <a href='" . $this->tracking_url . "index.php?entryPoint=removeme&identifier={$this->getTargetId()}'>{$mod_strings['TXT_REMOVE_ME_CLICK']}</a></span>";
                 }
-                // cn: bug 11979 - adding single quote to conform with HTML email RFC
                 $mail->Body .= "<br /><img alt='' height='1' width='1' src='{$this->tracking_url}index.php?entryPoint=image&identifier={$this->getTargetId()}' />";
-
                 $mail->AltBody = $template_data['body'];
-                if ($btracker) {
-                    $mail->AltBody .= "\n" . $tracker_url;
-                }
+
                 if ($this->has_optout_links == false) {
                     $mail->AltBody .= "\n\n\n{$mod_strings['TXT_REMOVE_ME_ALT']} " . $this->tracking_url . "index.php?entryPoint=removeme&identifier={$this->getTargetId()}";
                 }
@@ -439,6 +403,8 @@ class CustomEmailMan extends EmailMan {
             if ($success) {
                 $this->set_as_sent($focus->email1, true, $email_id, 'Emails', 'targeted');
             } else {
+                /*
+                // it seems this $parent variable is not used anywhere....
                 if (!empty($layout_def['parent_id'])) {
                     if (isset($layout_def['fields'][strtoupper($layout_def['parent_id'])])) {
                         $parent .= "&parent_id=" . $layout_def['fields'][strtoupper($layout_def['parent_id'])];
@@ -449,6 +415,7 @@ class CustomEmailMan extends EmailMan {
                         $parent .= "&parent_module=" . $layout_def['fields'][strtoupper($layout_def['parent_module'])];
                     }
                 }
+                */
                 //log send error. save for next attempt after 24hrs. no campaign log entry will be created.
                 $this->set_as_sent($focus->email1, false, null, null, 'send error');
             }
@@ -472,7 +439,7 @@ class CustomEmailMan extends EmailMan {
 
     // THE FUNCTION BELOW IS 100% LIKE THE PARENT VERSION, it's just here because they made it "private"
     // instead of "protected". See https://github.com/salesagility/SuiteCRM/pull/8841
-  /*  private function shouldBlockEmail(SugarBean $bean)
+    protected function shouldBlockEmail(SugarBean $bean)
     {
         global $sugar_config;
 
@@ -530,5 +497,5 @@ class CustomEmailMan extends EmailMan {
 
         return false;
     }
-*/
+
 }

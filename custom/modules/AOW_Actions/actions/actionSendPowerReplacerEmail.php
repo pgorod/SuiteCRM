@@ -57,7 +57,7 @@ class actionSendPowerReplacerEmail extends actionSendEmail
             }
 
             // avoid undefined index warnings for cc and bcc:
-            $emails['cc']  = $emails['cc']  ?? array();
+            $emails['cc'] = $emails['cc'] ?? array();
             $emails['bcc'] = $emails['bcc'] ?? array();
 
             if (!$this->sendEmail($emails['to'], $emailTemp->subject, $email_body_html, $emailTemp->body, $bean, $emails['cc'], $emails['bcc'], $attachments)) {
@@ -91,8 +91,8 @@ class actionSendPowerReplacerEmail extends actionSendEmail
         $mail->FromName = $defaults['name'];
         $mail->ClearAllRecipients();
         $mail->ClearReplyTos();
-        $mail->Subject=from_html($emailSubject);
-        $mail->Body=$emailBody;
+        $mail->Subject = from_html($emailSubject);
+        $mail->Body = $emailBody;
         $mail->AltBody = $altemailBody;
 
         if (empty($emailTo)) {
@@ -114,29 +114,45 @@ class actionSendPowerReplacerEmail extends actionSendEmail
 
         // ------------------------------------------------
 
-        $replacer = new SuiteReplacer();
-        $context = Array();
-        $context[]= [lcfirst($relatedBean->object_name), $relatedBean];
-        if (in_array(lcfirst($relatedBean->object_name), ['contact', 'lead', 'target', 'user', ])) {
-            $context[] = ['person', $relatedBean];
-        }
-        global $sugar_config;
-        $context[]= ['site_url',        $sugar_config['site_url']];
-        $context[]= ['thisEmail',       $mail];
+        /*
+                $bogusContext = Array();
+                $bogusContext[]= [lcfirst($relatedBean->object_name), $relatedBean];
+                if (in_array(lcfirst($relatedBean->object_name), ['contact', 'lead', 'target', 'user', ])) {
+                    $bogusContext[] = ['person', $relatedBean];
+                }
+                $bogusContext[]= ['site_url',        $sugar_config['site_url']];
+                $bogusContext[]= ['thisEmail',       $mail];
 
-        $parts  = ['Subject', 'Body' /*html*/, 'AltBody' /*plaintext*/];
+                $parts  = ['Subject', 'Body', 'AltBody'];
+
+                        $bCancel = false;
+                        foreach ($parts as $key) {
+                            $value = $mail->$key;
+                            $value = ($key === 'Body') ?  htmlspecialchars_decode($value, ENT_QUOTES | ENT_HTML401) : $value;
+                            try {
+                                $mail->$key = $replacer->replace($value);
+                            }
+                            catch (\Exception $twigException) {
+                                LoggerManager::getLogger()->error('SendPowerReplacerEmail at record id'. $relatedBean->id . ', ' . $relatedBean->name . '. Twig Template error: ' . $twigException->getMessage());
+                                $bCancel = true;
+                            }
+                        }
+        */
+
+        global $sugar_config;
+        $replacer = SuiteReplacer::getInstance()
+            ->addContext($relatedBean)
+            ->addContext(['site_url', $sugar_config['site_url']])
+            ->addContext(['thisEmail', $mail]);
 
         $bCancel = false;
-        foreach ($parts as $key) {
-            $value = $mail->$key;
-            $value = ($key === 'Body') ?  htmlspecialchars_decode($value, ENT_QUOTES | ENT_HTML401) : $value;
-            try {
-                $mail->$key = $replacer->replace($value, $context);
-            }
-            catch (\Exception $twigException) {
-                LoggerManager::getLogger()->error('SendPowerReplacerEmail at record id'. $relatedBean->id . ', ' . $relatedBean->name . '. Twig Template error: ' . $twigException->getMessage());
-                $bCancel = true;
-            }
+        try {
+            $mail->Subject = $replacer->replace($mail->Subject, true);
+            $mail->Body    = $replacer->replace(htmlspecialchars_decode($mail->Body, ENT_QUOTES | ENT_HTML401), true);  /*html*/
+            $mail->AltBody = $replacer->replace($mail->AltBody); /*plaintext*/
+        } catch (\Exception $twigException) {
+            LoggerManager::getLogger()->error('SendPowerReplacerEmail at record id' . $relatedBean->id . ', ' . $relatedBean->name . '. Twig Template error: ' . $twigException->getMessage());
+            $bCancel = true;
         }
 
         // TIP: throw exception inside template to provoke the cancellation conditionally, if you want. See our custom 'cancel' Twig function
@@ -160,10 +176,10 @@ class actionSendPowerReplacerEmail extends actionSendEmail
 
         //now create email
         if ($mail->Send()) {
-            $emailObj->to_addrs= implode(',', $emailTo);
-            $emailObj->cc_addrs= implode(',', $emailCc);
-            $emailObj->bcc_addrs= implode(',', $emailBcc);
-            $emailObj->type= 'out';
+            $emailObj->to_addrs = implode(',', $emailTo);
+            $emailObj->cc_addrs = implode(',', $emailCc);
+            $emailObj->bcc_addrs = implode(',', $emailBcc);
+            $emailObj->type = 'out';
             $emailObj->deleted = '0';
             $emailObj->name = $mail->Subject;
             $emailObj->description = $mail->AltBody;
@@ -192,7 +208,6 @@ class actionSendPowerReplacerEmail extends actionSendEmail
                 $note->parent_id = $emailObj->id;
                 $note->parent_type = $attachment->parent_type;
                 $note->name = $attachment->name;
-                ;
                 $note->filename = $attachment->filename;
                 $note->file_mime_type = $attachment->file_mime_type;
                 $fileLocation = "upload://{$attachment->id}";
@@ -207,3 +222,4 @@ class actionSendPowerReplacerEmail extends actionSendEmail
         return false;
     }
 }
+

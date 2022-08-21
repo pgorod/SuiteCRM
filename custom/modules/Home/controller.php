@@ -4,12 +4,17 @@ if (!defined('sugarEntry') || !sugarEntry) {
     die('Not A Valid Entry Point');
 }
 
-require_once 'modules/Home/controller.php';
+//Dropped this require because no longer extending core controller; now we're fully replacing it
+//require_once 'modules/Home/controller.php';
+
+
+include_once get_custom_file_if_exists('include/InlineEditing/InlineEditing.php');
 
 // Pro tier add-ons require more code:
 file_exists('custom/modules/Home/customHomeControllerExtensions.php') AND require_once 'custom/modules/Home/customHomeControllerExtensions.php';
 
-class CustomHomeController extends HomeController
+//class CustomHomeController extends HomeController
+class HomeController extends SugarController
 {
 
     public function action_saveHTMLField()
@@ -67,16 +72,33 @@ class CustomHomeController extends HomeController
         if ($_REQUEST['field'] && $_REQUEST['id'] && $_REQUEST['current_module']) {
             $validation = getValidationRules($_REQUEST['current_module'], $_REQUEST['field'], $_REQUEST['id']);
             $html = getEditFieldHTML($_REQUEST['current_module'], $_REQUEST['field'], $_REQUEST['field'], 'EditView', $_REQUEST['id']);
+            $relateJS = '';
             if ($_REQUEST['type'] === 'relate' || $_REQUEST['type'] === 'parent') {
                 $relateJS = getRelateFieldJS($_REQUEST['current_module'], $_REQUEST['field']);
             }
+            $this->view = '';  // see SugarController.php --> execute() function
             echo json_encode(
                 [ 'validationRules' => $validation,
                   'editFieldHTML'   => $html,
-                  'relateFieldJS' => $relateJS ]
+                  'relateFieldJS'   => $relateJS ]
             );
         }
     }
+
+    // the function below is 100% like core:
+    public function action_getDisplayValue()
+    {
+        if ($_REQUEST['field'] && $_REQUEST['id'] && $_REQUEST['current_module']) {
+            $bean = BeanFactory::getBean($_REQUEST['current_module'], $_REQUEST['id']);
+
+            if (is_object($bean) && $bean->id != "") {
+                echo getDisplayValue($bean, $_REQUEST['field'], "close");
+            } else {
+                echo "Could not find value.";
+            }
+        }
+    }
+
 
     // when moving to Core, remove these functions:
     // public function action_getEditFieldHTML()

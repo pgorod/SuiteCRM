@@ -44,8 +44,7 @@ use SuiteCRM\Utility\SuiteValidator;
 if (!defined('sugarEntry') || !sugarEntry) {
     die('Not A Valid Entry Point');
 }
-
-require_once 'include/Services/NormalizeRecords/NormalizeRecords.php';
+file_exists('include/Services/NormalizeRecords/NormalizeRecords.php') AND require_once 'include/Services/NormalizeRecords/NormalizeRecords.php';
 
 /**
  * Set up an array of Jobs with the appropriate metadata
@@ -107,7 +106,7 @@ function pollMonitoredInboxes()
     global $app_strings;
 
 
-    require_once('modules/Emails/EmailUI.php');
+    require_once get_custom_file_if_exists('modules/Emails/EmailUI.php');
 
     $ie = BeanFactory::newBean('InboundEmail');
     $emailUI = new EmailUI();
@@ -145,7 +144,7 @@ function pollMonitoredInboxes()
                 if (is_array($newMsgs)) {
                     $current = 1;
                     $total = count($newMsgs);
-                    require_once("include/SugarFolders/SugarFolders.php");
+                    require_once get_custom_file_if_exists("include/SugarFolders/SugarFolders.php");
                     $sugarFolder = new SugarFolder();
                     $groupFolderId = $ieX->groupfolder_id;
                     $users = array();
@@ -289,7 +288,7 @@ function runMassEmailCampaign()
         require('modules/ACL/ACLController.php');
     }
 
-    require(get_custom_file_if_exists('modules/EmailMan/EmailManDelivery.php'));
+    require get_custom_file_if_exists('modules/EmailMan/EmailManDelivery.php');
     return true;
 }
 
@@ -559,13 +558,13 @@ function cleanJobQueue($job)
 
 function pollMonitoredInboxesAOP()
 {
-    require_once 'modules/InboundEmail/AOPInboundEmail.php';
+    require_once get_custom_file_if_exists('modules/InboundEmail/AOPInboundEmail.php');
     $GLOBALS['log']->info('----->Scheduler fired job of type pollMonitoredInboxesAOP()');
     global $dictionary;
     global $app_strings;
     global $sugar_config;
 
-    require_once('modules/Configurator/Configurator.php');
+    require_once get_custom_file_if_exists('modules/Configurator/Configurator.php');
     $aopInboundEmail = new AOPInboundEmail();
 
     $sqlQueryResult = $aopInboundEmail->db->query(
@@ -630,7 +629,7 @@ function pollMonitoredInboxesAOP()
                     } // if
                     $messagesToDelete = array();
                     if ($aopInboundEmailX->isMailBoxTypeCreateCase()) {
-                        require_once 'modules/AOP_Case_Updates/AOPAssignManager.php';
+                        require_once get_custom_file_if_exists('modules/AOP_Case_Updates/AOPAssignManager.php');
                         $assignManager = new AOPAssignManager($aopInboundEmailX);
                     }
                     foreach ($newMsgs as $k => $msgNo) {

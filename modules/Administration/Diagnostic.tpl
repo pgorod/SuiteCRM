@@ -99,7 +99,7 @@
             <tr>
                 <td scope="row"><span>{$MOD.LBL_DIAGNOSTIC_MD5}</span></td>
                 <td><span><input name='md5' class="checkbox" type="checkbox" tabindex='7'
-                                 onclick="md5checkboxes()" checked></span></td>
+                                 onclick="md5checkboxes()"></span></td>
             </tr>
             <tr>
 

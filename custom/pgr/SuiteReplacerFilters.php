@@ -13,6 +13,96 @@ class SuiteReplacerFilters
          $this->suiteReplacer = $suiteReplacer;
     }
 
+    public static function fieldSort($array, $fieldName) {
+        if ($array instanceof \Traversable) {
+            $array = iterator_to_array($array);
+        } elseif (!\is_array($array)) {
+            throw new Twig\Error\Error(sprintf('The fieldSort custom filter only works with arrays or "Traversable", got "%s".',
+                \gettype($array)));
+        }
+
+        //$arrowFunction = "(a,b) => a['$fieldName']$dateSuffix < b['$fieldName']$dateSuffix";
+
+        // fieldNames starting with "-" are for descending sort
+        $invert = false;
+        if (substr($fieldName, 0, 1) === '-') {
+            $invert = true;
+            $fieldName = ltrim(substr($fieldName, 1));
+        }
+        // prefixing with '+' is unnecessary, but let's cover the case where somebody tries it anyway:
+        if (substr($fieldName, 0, 1) === '+') {
+            $fieldName = ltrim(substr($fieldName, 1));
+        }
+
+        $asDate = strpos($fieldName, "date_") !== false;
+        $ret = usort($array,
+            function ($a, $b) use ($fieldName, $invert, $asDate) {
+                $cmp = $asDate ?
+                       strtotime($a->$fieldName) - strtotime($b->$fieldName) :
+                       strcasecmp($a->$fieldName, $b->$fieldName);
+                return $invert ? (-1 * $cmp) : $cmp;
+            }
+        );
+        if (false === $ret) {
+            throw new Twig\Error\Error("fieldSort custom filter failed usort with custom function");
+        }
+        return $array;
+    }
+
+    // Do not confuse "relate" (adds relationship) with "related" (gets related records list)
+    public static function relate($beanArrayOrSingleBean, $relatedModule) {
+        // Security reminder: treat parameters as untrusted user-provided content
+
+        // if single Bean, turn into array of one:
+        if (!is_array($beanArrayOrSingleBean) && (count($beanArrayOrSingleBean)===1) && $beanArrayOrSingleBean[0] instanceof SugarBean) {
+            $beanArray[] = $beanArrayOrSingleBean;
+        } else {
+            $beanArray = $beanArrayOrSingleBean;
+        }
+        foreach ($beanArray as $bean) {
+            if (!($bean instanceof SugarBean)) {
+                throw new Twig\Error\Error('"relate" filter called on non-Bean object.');
+            }
+            if (!($relatedModule instanceof SugarBean)) {
+                throw new Twig\Error\Error('"relate" filter called attempting to relate to non-Bean object.');
+            }
+            $relName = $relatedModule->table_name;
+
+            // calls only has 3 relationships that actually use tables: calls_contacts, calls_leads, calls_users.
+            // All the rest is just parent_type / parent_id on the calls table itself.
+            // These fields are hard to change inside a Workflow in the middle of a save without being undone, so direct SQL is needed.
+            if (($relName === 'calls') &&
+                ($bean->table_name !== 'contacts') && ($bean->table_name !== 'leads') && ($bean->table_name !== 'users')) {
+
+                $oppId = $GLOBALS['db']->quoted($bean->id);
+                $callId = $GLOBALS['db']->quoted($relatedModule->id);
+
+                $sql = <<<SQL
+                UPDATE `calls` 
+                SET `parent_type`="Opportunities", 
+                    `parent_id`=$oppId 
+                WHERE id = $callId 
+SQL;
+                try {
+                    $results = $GLOBALS['db']->query($sql, true);
+                } catch (Exception $e) {
+                    throw new Twig\Error\Error('Error updating DB for special relation type ' . $relName . ' to ' . $bean->table_name . '.');
+                }
+            } else {
+                if (!$bean->load_relationship($relName)) {
+                    throw new Twig\Error\Error("Can't load_relationship by name $relName");
+                }
+                if (!$bean->$relName->add($relatedModule)) {
+                    throw new Twig\Error\Error("Can't add record to relationship $relName");
+                }
+            }
+        }
+        // this is a side-effect filter, causing a relation to be created. So we just return the same as the input,
+        // so it can easily be chained to do other things next.
+        return $beanArrayOrSingleBean;
+    }
+
+    // Do not confuse "relate" (adds relationship) with "related" (gets related records list)
     public static function related($focus, $relatedModule)
     {
         // Security reminder: treat parameters as untrusted user-provided content:
@@ -31,14 +121,22 @@ class SuiteReplacerFilters
             }
             $variations = [];
             $variations[] = $relatedModule;
+
+            // adds variations for plurals:
             if (substr($relatedModule, -1) !== 's') {
                 $variations[] = $relatedModule . 's';
             }
+            if ($relatedModule === 'opportunities') {
+                $variations[] = 'opportunity';
+            }
+
+            // adds variations for prefixed module names:
             $prefixedModules = ['am_projecttemplates', 'am_tasktemplates', 'aobh_businesshours', 'aod_index', 'aod_indexevent', 'aok_knowledgebase',
                 'aok_knowledge_base_categories', 'aop_case_events', 'aop_case_updates', 'aor_charts', 'aor_conditions', 'aor_fields',
                 'aor_reports', 'aor_scheduled_reports', 'aos_contracts', 'aos_invoices', 'aos_line_item_groups', 'aos_pdf_templates',
                 'aos_products', 'aos_quotes', 'aos_products_quotes', 'aos_product_categories', 'aow_actions', 'aow_conditions',
                 'aow_processed', 'aow_workflow', 'fp_events', 'fp_event_locations', 'jjwg_areas', 'jjwg_maps', 'jjwg_markers'];
+
             // adds variations for simplified module names:
             foreach ($prefixedModules as $prefixedModule) {
                 if ((strpos($prefixedModule, $relatedModule) !== false) &&
@@ -46,6 +144,7 @@ class SuiteReplacerFilters
                     $variations[] = $prefixedModule;
                 }
             }
+
             // adds variations for custom relationships with names like leads_aos_quotes_1:
             foreach ($focus->field_name_map as $key => $field) {
                 if ((strpos($focus->table_name . '_' . $key, $relatedModule) !== false) &&
@@ -53,6 +152,7 @@ class SuiteReplacerFilters
                     $variations[] = $key;
                 }
             }
+
             // tries each variation until one works:
             foreach ($variations as $varkey => $variation) {
                 $linkedBeans = $focus->get_linked_beans($variation); // , '', '', 0, -1, 0, $whereClause);
@@ -174,9 +274,9 @@ class SuiteReplacerFilters
             if ($fileNameOrNoteObj instanceof Note) {
 
                 // avoid repeats which are common due to evaluating both description and description_html:
-                if (!in_array($fileNameOrNoteObj, array_column(self::$suiteReplacer->pickedObjects, 1))) {
+                if (!in_array($fileNameOrNoteObj->id, array_column(self::$suiteReplacer->pickedObjects, 1))) {
                     // pass the object itself to the outside calling function, in this case it's probably sendEmail from within a Workflow action
-                    self::$suiteReplacer->pickedObjects[] = ['Note', $fileNameOrNoteObj->id, $fileNameOrNoteObj];
+                    self::$suiteReplacer->pickedObjects[] = [ 'Note', $fileNameOrNoteObj->id, $fileNameOrNoteObj ];
                 }
             } else {
                 $fileNameOrNoteObj = str_replace('..', '.', $fileNameOrNoteObj);
@@ -184,11 +284,11 @@ class SuiteReplacerFilters
                 if (!file_exists($fileNameOrNoteObj)) {
                     throw new Twig\Error\Error('attachFilter: Error attaching file to email "' . $fileNameOrNoteObj . '.');
                 }
-                $url = $fileNameOrNoteObj;
+                //$url = $fileNameOrNoteObj;
 
                 // avoid repeats which are common due to evaluating both description and description_html:
                 if (!in_array($fileNameOrNoteObj, array_column(self::$suiteReplacer->files2Attach, 0))) {
-                    self::$suiteReplacer->files2Attach[] = [$fileNameOrNoteObj, $displayName, $url];
+                    self::$suiteReplacer->files2Attach[] = [ $fileNameOrNoteObj, $displayName, /*$url*/ ];
                 }
             }
         }

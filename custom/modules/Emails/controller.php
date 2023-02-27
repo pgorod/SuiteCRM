@@ -60,7 +60,7 @@ class CustomEmailsController extends EmailsController {
                     }
                     catch (\Exception $twigException) {
                         $error = 'Twig Template error: ' . $twigException->getMessage();
-                        $errorvalue = $value;
+                        $errorValue = $value;
                     }
                 }
             }
@@ -70,15 +70,15 @@ class CustomEmailsController extends EmailsController {
                 $GLOBALS['log']->error($error);
                 $split = explode(" ", $twigException->getMessage());
                 $line = intval($split[count($split)-1]);
-                $lineText = explode("\n",$errorvalue)[$line-1];
+                $lineText = explode("\n", $errorValue)[$line-1];
                 $this->view = 'ajax';
                 $response['errors'] = [
-                    'type' => get_class($this->bean),
-                    'id' => $this->bean->id,
-                    'error' => $error,
-                    'title' => $error . ": <br/><br/><textarea readonly type=text style='width:100%'>$lineText</textarea><br/><br/>Mail not sent.",
+                    'type'   => get_class($this->bean),
+                    'id'     => $this->bean->id,
+                    'error'  => $error,
+                    'title'  => $error . ": <br/><br/><textarea readonly type=text style='width:100%'>$lineText</textarea><br/><br/>Mail not sent.",
                     'lineno' => $line,
-                    'line' => $lineText
+                    'line'   => $lineText
                 ];
                 echo json_encode($response);
                 return;

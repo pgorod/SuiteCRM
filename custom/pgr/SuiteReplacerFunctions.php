@@ -13,7 +13,8 @@ class SuiteReplacerFunctions
     }
 
 
-    // this is a new Twig extension function our users can use in their templates
+    // Get the best bean that matches that email address, using weights by module type, and preferring primary addresses:
+    // See also InboundEmail/InboundEmail.php : function getRelatedId($email, $module)
     public static function owner($email) {
         // Security reminder: treat parameters as untrusted user-provided content:
         if (is_array($email)) {
@@ -24,9 +25,8 @@ class SuiteReplacerFunctions
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new Twig\Error\Error('Error: invalid email address used in "owner" function.');
         }
-        $email = $GLOBALS['db']->quoted($email);
+        $email = $GLOBALS['db']->quoted(trim(strtoupper($email)));
 
-        // get the best bean that matches that email address, using weights by module type, and preferring primary addresses:
         $sql = <<<SQL
             SELECT ea.email_address, eabr.bean_module AS module, eabr.bean_id AS id, eabr.primary_address, 
                 CASE
@@ -38,7 +38,7 @@ class SuiteReplacerFunctions
                 END + 100 * eabr.primary_address as points
             FROM `email_addr_bean_rel` eabr
             LEFT JOIN email_addresses ea ON eabr.email_address_id = ea.id
-            WHERE ea.email_address = $email
+            WHERE ea.email_address_caps = $email
             ORDER BY points DESC
             LIMIT 1
 SQL;
@@ -80,19 +80,18 @@ SQL;
     }
 
     // CAN BE DELETED, THE FILTER VERSION IS ENOUGH
-    // this is a new Twig extension function our users can use in their templates
-    public function attachFunction($fileName, $displayName = '') {
+   public static function attach($fileName, $displayName = '') {
         // Security reminder: treat parameters as untrusted user-provided content:
         $fileName = str_replace('..', '.', $fileName);
 
         if (!file_exists($fileName)) {
             throw new Twig\Error\Error('attachFunction: Error attaching file to email "' . $fileName . '.');
         }
-        $url = $fileName;
+        //$url = $fileName;
 
         // avoid repeats which are common due to evaluating both description and description_html:
-        if (!in_array($fileName, array_column($this->files2Attach, 0))) {
-            $this->files2Attach[] = [$fileName, $displayName, $url];
+        if (!in_array($fileName, array_column(self::$suiteReplacer->files2Attach, 0))) {
+            self::$suiteReplacer->files2Attach[] = [$fileName, $displayName, ];      // , $url ];
         }
     }
 

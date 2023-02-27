@@ -12,7 +12,7 @@ class CustomSugarFieldBase extends SugarFieldBase {
         parent::save($bean, $params, $field, $properties, $prefix);
 
         require_once 'custom/pgr/SuiteReplacer.php';
-        if (isset($bean->$field)) {
+        if (!empty($bean->$field) && is_string($bean->$field)) {
             $bean->$field = SuiteReplacer::getInstance()
                 ->addCondition('shouldTriggerReplace', $bean->$field)
                 ->addContext($bean, $field)

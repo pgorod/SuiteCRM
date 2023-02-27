@@ -7,9 +7,9 @@ $tags = ['if', 'for', 'apply', 'set', 'do'];
 $filters = [
     // default Twig filters:
     'upper', 'escape', 'date', 'date_modify', 'first', 'last', 'join', 'map', 'filter', 'reduce', 'raw', 'trim',
-    'inline_css', 'nl2br', 'spaceless', 'number_format', 'format_currency',
+    'inline_css', 'nl2br', 'spaceless', 'number_format', 'format_currency', 'length', 'sort', 'format',
     // custom, defined in SuiteReplacerFilters:
-    'related', 'photo', 'render', 'topdf', 'attach'];
+    'relate', 'related', 'photo', 'render', 'topdf', 'attach', 'fieldSort'];
 
 // Twig functions are called with argument lists like this: someFunction(args)
 $functions = [
@@ -33,8 +33,10 @@ $properties = [
     'AOS_Quotes' => ['name', 'total_amt', 'date_modified'],
     'contact' => ['id', 'name', 'assigned_user_id', 'emailAddress', 'date_modified', 'sex_c', 'salutation',
                   'email1', 'phone_mobile', 'first_name', 'last_name'],
+    'email' => ['name', 'id', 'date_entered', 'date_modified'],
     'lead' => ['name', 'assigned_user_id', 'emailAddress', 'date_modified', 'sex_c', 'salutation', 'email1'],
     'note' => ['name'],
+    'opportunity' => ['name', 'id', 'date_entered', 'date_modified', 'amount', 'sales_stage'],
     'SugarEmailAddress' => ['addresses'],
     'user' => ['name', 'phone_work', 'phone_mobile'],
 ];

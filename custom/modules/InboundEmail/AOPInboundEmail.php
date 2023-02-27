@@ -217,10 +217,10 @@ class AOPInboundEmail extends InboundEmail
             $GLOBALS['log']->debug('finding related accounts with address ' . $contactAddr);
             if ($accountIds = $this->getRelatedId($contactAddr, 'accounts')) {
                 if (sizeof($accountIds) == 1) {
-                    $c->account_id = $accountIds[0];
-
                     $acct = new Account();
-                    $acct->retrieve($c->account_id);
+                    $acct->retrieve($accountIds[0]);
+                    // light-weight-relate Case to Account:
+                    $c->account_id = $accountIds[0];
                     $c->account_name = $acct->name;
                 } // if
             } // if
@@ -228,7 +228,7 @@ class AOPInboundEmail extends InboundEmail
             if (!empty($contactIds)) {
                 $c->contact_created_by_id = $contactIds[0];
             }
-            // Workaround to avoid the save method triggering notification emails...
+            // Workaround to avoid the save method triggering notification emails... (assignment email to user)
             //$holdThis = $c->notify_inworkflow ?? null;
             //$c->notify_inworkflow = false;
             $c->save(true);  // false skips notification email
@@ -243,9 +243,11 @@ class AOPInboundEmail extends InboundEmail
             } // if
             if (!empty($contactIds) && $c->load_relationship('contacts')) {
                 if (!$accountIds && count($contactIds) == 1) {
+                    // matched zero accounts, one contact
                     $contact = BeanFactory::getBean('Contacts', $contactIds[0]);
                     if ($contact->load_relationship('accounts')) {
                         $acct = $contact->accounts->get();
+                        // we'll use the contact's account, but do a full relate...?
                         if ($c->load_relationship('accounts') && !empty($acct[0])) {
                             $c->accounts->add($acct[0]);
                         }
@@ -261,7 +263,7 @@ class AOPInboundEmail extends InboundEmail
                 }
             } // if
             foreach ($notes as $note) {
-                //Link notes to case also
+                // Clone email notes to case also
                 $newNote = BeanFactory::newBean('Notes');
                 $newNote->name = $note->name;
                 $newNote->file_mime_type = $note->file_mime_type;
@@ -285,6 +287,7 @@ class AOPInboundEmail extends InboundEmail
    $email->notify_inworkflow = false;
             $email->save(false);
             $GLOBALS['log']->debug('InboundEmail created one case with number: '.$c->case_number);
+
             $createCaseTemplateId = $this->get_stored_options('create_case_email_template', "");
             if (!empty($this->stored_options)) {
                 $storedOptions = unserialize(base64_decode($this->stored_options));
@@ -348,7 +351,7 @@ class AOPInboundEmail extends InboundEmail
                 $reply->cc_addrs_arr		= array();
                 $reply->bcc_addrs_arr		= array();
                 $reply->from_name			= $fromName;
-                $reply->from_addr			= 'suitecrm@gmx.com'; // $fromAddress;
+                $reply->from_addr			= $fromAddress;
                 $reply->reply_to_name		= $replyToName;
                 $reply->reply_to_addr		= $replyToAddr;
                 $reply->name				= $et->subject;
@@ -364,8 +367,8 @@ class AOPInboundEmail extends InboundEmail
                 global $sugar_config;
                 $replacer = SuiteReplacer::getInstance()
                     ->addContext($c)
-                    ->addContext(['account',       $accountIds[0]])
-                    ->addContext(['contact',       $contactIds[0]])
+                    ->addContext(['account',      $accountIds[0]])
+                    ->addContext(['contact',      $contactIds[0]])
                     ->addContext(['site_url',     $sugar_config['site_url']])
                     ->addContext(['inboundEmail', $email])
                     ->addContext(['thisEmail',    $reply]);
@@ -402,7 +405,7 @@ class AOPInboundEmail extends InboundEmail
 
             } // if
         } else {
-            echo "First if not matching\n";
+            //echo "First if not matching\n";
             if (!empty($email->reply_to_email) && isValidEmailAddress($email->reply_to_email)) {
                 $contactAddr = $email->reply_to_email;
             } elseif (!empty($email->from_addr) && isValidEmailAddress($email->from_addr)) {

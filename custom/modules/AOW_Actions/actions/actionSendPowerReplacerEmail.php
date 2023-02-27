@@ -13,6 +13,10 @@ class actionSendPowerReplacerEmail extends actionSendEmail
         // ****************************************************************
         // ****************************************************************
 
+        if (!empty($bean->in_relationship_update)) { // if this is set, and true, then we are inside a bean save triggered by a relationship delete...
+            return true;
+        }
+
         include_once __DIR__ . '/../../EmailTemplates/EmailTemplate.php';
 
         $this->clearLastEmailsStatus();

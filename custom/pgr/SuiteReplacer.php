@@ -12,8 +12,8 @@ class SuiteReplacer {
 
     public $twig;
     public $assignments;
-    public $files2Attach = [];
-    public $pickedObjects = [];
+    public $files2Attach = [];  //   [ fileName, displayName ] elements
+    public $pickedObjects = []; //   [ objectType, id, Object ] elements
 
     private static $_instance = null;
     private static $auto_new  = null;
@@ -47,6 +47,9 @@ class SuiteReplacer {
     }
 
     public static function undoCleanUp($overZealouslyCleanedUpString) {
+        if (!is_string($overZealouslyCleanedUpString)) {
+            return $overZealouslyCleanedUpString;
+        }
         if (!function_exists('replaceInCode')) {
             function replaceInCode($row) {
                 $replace = array(
@@ -72,6 +75,9 @@ class SuiteReplacer {
             }
         }
         // undo replaces of all those codes, but only inside Twig tags:
+
+
+
         $ret = preg_replace_callback("#{%(.*?)%}#s",'replaceInCode2', $overZealouslyCleanedUpString);
         $ret = preg_replace_callback("#{{(.*?)}}#s",'replaceInCode', $ret);
         return $ret;
@@ -99,16 +105,18 @@ class SuiteReplacer {
         // without need for named references. Use separate array for function options (is_safe etc)
 
         // add custom Twig filters and functions from class static methods
-        $this->twig->addFilter(new TwigFilter('related', 'SuiteReplacerFilters::related'));
-        $this->twig->addFilter(new TwigFilter('photo',   'SuiteReplacerFilters::photo',
-                                                           array('is_safe' => array('html'))));
-        $this->twig->addFilter(new TwigFilter('render',  'SuiteReplacerFilters::render'));
-        $this->twig->addFilter(new TwigFilter('topdf',   'SuiteReplacerFilters::topdf'));
-        $this->twig->addFilter(new TwigFilter('attach',  'SuiteReplacerFilters::attachFilter'));
+        $this->twig->addFilter(new TwigFilter('fieldSort', 'SuiteReplacerFilters::fieldSort'));
+        $this->twig->addFilter(new TwigFilter('relate',    'SuiteReplacerFilters::relate'));
+        $this->twig->addFilter(new TwigFilter('related',   'SuiteReplacerFilters::related'));
+        $this->twig->addFilter(new TwigFilter('photo',     'SuiteReplacerFilters::photo',
+                                                             array('is_safe' => array('html'))));
+        $this->twig->addFilter(new TwigFilter('render',    'SuiteReplacerFilters::render'));
+        $this->twig->addFilter(new TwigFilter('topdf',     'SuiteReplacerFilters::topdf'));
+        $this->twig->addFilter(new TwigFilter('attach',    'SuiteReplacerFilters::attachFilter'));
 
         $this->twig->addFunction(new TwigFunction('owner',  'SuiteReplacerFunctions::owner'));
         $this->twig->addFunction(new TwigFunction('bean',   'SuiteReplacerFunctions::bean'));
-        $this->twig->addFunction(new TwigFunction('attach', 'SuiteReplacerFunctions::attachFilter'));
+        $this->twig->addFunction(new TwigFunction('attach', 'SuiteReplacerFunctions::attach'));
         $this->twig->addFunction(new TwigFunction('recent', 'SuiteReplacerFunctions::recent'));
         $this->twig->addFunction(new TwigFunction('cancel', 'SuiteReplacerFunctions::cancel'));
     }
@@ -143,7 +151,9 @@ class SuiteReplacer {
             global $beanList;
             $uName = ucfirst($name);
             if (!empty($beanList[$uName]) || in_array($uName, $beanList)) {
-                $input = BeanFactory::getBean($uName . 's', $input) ?: BeanFactory::getBean($uName, $input);
+                $input = BeanFactory::getBean($uName . 's', $input) ?:
+                         BeanFactory::getBean($uName, $input) ?:
+                         $input;
             }
         }
         if ($input instanceof SugarBean) {
@@ -271,8 +281,8 @@ class SuiteReplacer {
             //    $this->twig->getLoader()->addLoader(new \Twig\Loader\ArrayLoader(['main' => "$original"]));
             //}
 
-            $this->assignments['mod_strings'] = $GLOBALS['mod_strings'];
-            $this->assignments['app_strings'] = $GLOBALS['app_strings'];
+            if (isset($GLOBALS['mod_strings'])) { $this->assignments['mod_strings'] = $GLOBALS['mod_strings']; }
+            if (isset($GLOBALS['app_strings'])) { $this->assignments['app_strings'] = $GLOBALS['app_strings']; }
             //$this->assignments['sugar_config'] = $GLOBALS['sugar_config']; // SECURITY don't add this indiscriminately: it includes dbconfig with DB admin user and password...
 
             foreach (self::$context as $item) {
